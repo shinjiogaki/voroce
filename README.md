@@ -11,8 +11,8 @@ I have a couple of ideas to speed up. So stay tuned!
 
 |      |  naive impl |  optimized |
 | ---- | ----------: | ---------: |
-|  2d  |         421 |        230 |
-|  3d  |        3069 |        680 |
+|  2d  |         1.0 |       0.55 |
+|  3d  |         1.0 |       0.22 |
 
 ## Dependencies
 * [glm](https://github.com/g-truc/glm)
