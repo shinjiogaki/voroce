@@ -85,7 +85,7 @@ namespace voroce
 			return result;
 		}
 
-		// optimized (no gain in 2d so disabled)
+		// quadrant optimization
 		static float Evaluate2DOpt(const glm::vec2& source)
 		{
 			const auto flt_x = std::floor(source.x);
