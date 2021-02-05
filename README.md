@@ -4,7 +4,7 @@
 
 ## What is this?
 **voroce** is a fast and simple voronoi class useful to create images like the above ones.
-**voroce** is a coind word of **voronoi** $*$ **veloce**.
+**voroce** is a coind word of **voronoi** & **veloce**.
 
 I have a couple of ideas to speed up. So stay tuned!
 
