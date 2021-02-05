@@ -64,7 +64,6 @@ namespace voroce
 			auto worley = std::numeric_limits<float>::max();
 			auto result = std::numeric_limits<float>::max();
 
-			// test self and 8 ring neighbours
 			for (auto loop = 0; loop < 21; ++loop)
 			{
 				const auto u = us[loop];
@@ -131,7 +130,6 @@ namespace voroce
 			{
 				if (ranges[dist] < worley * 4)
 				{
-					// test self and 8 ring neighbours
 					for (auto loop = lowers[dist]; loop < uppers[dist]; ++loop)
 					{
 						const auto u = us[quadrant][loop];
@@ -265,7 +263,6 @@ namespace voroce
 			{
 				if (ranges[dist] < worley * 4)
 				{
-					// test self and 8 ring neighbours
 					for (auto loop = lowers[dist]; loop < uppers[dist]; ++loop)
 					{
 						const auto u = us[octant][loop];
