@@ -8,5 +8,12 @@
 
 I have a couple of ideas to speed up. So stay tuned!
 
+## Performance Comparison
+
+|      |  naive impl |  optimized |
+| ---- | ----------: | ---------: |
+|  2d  |         421 |        230 |
+|  3d  |        3069 |        680 |
+
 ## Dependencies
 * [glm](https://github.com/g-truc/glm)
