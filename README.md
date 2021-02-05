@@ -1,6 +1,6 @@
 # voroce
-<img src="img/stone.jpg" alt="stone" title="stone">
-<img src="img/flake.png" alt="flake" title="flake">
+<img src="img/stone.jpg" alt="stone" title="stone" width="320">
+<img src="img/flake.png" alt="flake" title="flake" width="320">
 
 ## What is this?
 **voroce** is a fast and simple voronoi class useful to create images like the above ones.
