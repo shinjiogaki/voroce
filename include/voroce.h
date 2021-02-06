@@ -3,6 +3,7 @@
 
 #include "glm/glm.hpp"
 #include <array>
+#include <functional>
 
 struct Voroce
 {
@@ -14,49 +15,46 @@ struct Voroce
 	static const auto PrimeW = 83492791;
 	static const auto LCG    = 48271;
 
-	template <class T>
-	static T Hash2D(const T& u, const T& v)
+	static const int32_t Hash2DLowQuality(const int32_t u, const int32_t v)
 	{
 		return ((u * PrimeU) ^ (v * PrimeV)) * LCG;
 	}
 
-	template <class T>
-	static T Hash3D(const T& u, const T& v, const T& w)
+	static const int32_t Hash3DLowQuality(const int32_t u, const int32_t v, const int32_t w)
 	{
 		return ((u * PrimeU) ^ (v * PrimeV) ^ (w * PrimeW)) * LCG;
 	}
 
 	// minstd_rand (TODO: use better hash, do something beter here, fast but a bit ugly...)
 
-	template <class T>
-	static auto OffsetX(const T& seed)
+	static auto OffsetX(const int32_t seed, const float jitter)
 	{
-		return (seed) / float(0xFFFFFFFF) + 0.5f;
+		return ((seed) / float(0xFFFFFFFF)) * jitter + 0.5f;
 	}
 
-	template <class T>
-	static auto OffsetY(const T& seed)
+	static auto OffsetY(const int32_t seed, const float jitter)
 	{
-		return (seed * LCG) / float(0xFFFFFFFF) + 0.5f;
+		return ((seed * LCG) / float(0xFFFFFFFF)) + 0.5f;
 	}
 
-	template <class T>
-	static auto OffsetZ(const T& seed)
+	static auto OffsetZ(const int32_t seed, const float jitter)
 	{
-		return (seed * LCG * LCG) / float(0xFFFFFFFF) + 0.5f;
+		return ((seed * LCG * LCG) / float(0xFFFFFFFF)) + 0.5f;
 	}
 
 	// naive implementation
-	static std::pair<int, float> Evaluate2DRef(const glm::vec2& source)
+	static std::pair<int32_t, float> Evaluate2DRef(const glm::vec2& source, const int32_t (*hash_2d)(const int32_t, const int32_t), const float jitter = 1.0f)
 	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
 		// 1 (self) + 20 (neighbours)
-		const int us[21] = { 0, 1, 0, -1,  0, 1, -1, -1,  1, 2, 0, -2,  0, 2, 1, -2,  1,  2, -1, -2, -1 };
-		const int vs[21] = { 0, 0, 1,  0, -1, 1,  1, -1, -1, 0, 2,  0, -2, 1, 2,  1, -2, -1,  2, -1, -2 };
+		const std::array<int32_t, 21> us = { 0, 1, 0, -1,  0, 1, -1, -1,  1, 2, 0, -2,  0, 2, 1, -2,  1,  2, -1, -2, -1 };
+		const std::array<int32_t, 21> vs = { 0, 0, 1,  0, -1, 1,  1, -1, -1, 0, 2,  0, -2, 1, 2,  1, -2, -1,  2, -1, -2 };
 
 		const auto flt_x = std::floor(source.x);
 		const auto flt_y = std::floor(source.y);
-		const auto int_x = (int32_t)flt_x;
-		const auto int_y = (int32_t)flt_y;
+		const auto int_x = int32_t(flt_x);
+		const auto int_y = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
 
 		auto worley = std::numeric_limits<float>::max();
@@ -67,11 +65,11 @@ struct Voroce
 			const auto u = us[loop];
 			const auto v = vs[loop];
 
-			const auto hash    = Hash2D(int_x + u, int_y + v);
-			const auto offsetX = OffsetX(hash);
-			const auto offsetY = OffsetY(hash);
-			const auto jitter  = origin + glm::vec2(u + offsetX, v + offsetY);
-			const auto tmp     = glm::dot(source - jitter, source - jitter);
+			const auto hash    = hash_2d(int_x + u, int_y + v);
+			const auto offsetX = OffsetX(hash, jitter);
+			const auto offsetY = OffsetY(hash, jitter);
+			const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
+			const auto tmp     = glm::dot(source - sample, source - sample);
 			if (worley > tmp)
 			{
 				worley = tmp;
@@ -83,12 +81,14 @@ struct Voroce
 	}
 
 	// quadrant optimization
-	static std::pair<int, float> Evaluate2DOpt(const glm::vec2& source)
+	static std::pair<int, float> Evaluate2DOpt(const glm::vec2& source, const int32_t (*hash_2d)(const int32_t, const int32_t), const float jitter = 1.0f)
 	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
 		const auto flt_x = std::floor(source.x);
 		const auto flt_y = std::floor(source.y);
-		const auto int_x = (int32_t)flt_x;
-		const auto int_y = (int32_t)flt_y;
+		const auto int_x = int32_t(flt_x);
+		const auto int_y = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
 
 		// octant selection
@@ -96,7 +96,7 @@ struct Voroce
 		if (0.5f > source.x - origin.x) { quadrant += 1; }
 		if (0.5f > source.y - origin.y) { quadrant += 2; }
 
-		const int us[4][15] =
+		const int32_t us[4][15] =
 		{
 			{0,  1, 0, 1, 0, 1,-1,-1,-1,  2, 2, 0, 1, 2,-1},
 			{0, -1,-1, 0,-1, 0, 1, 1, 1, -2,-2,-1, 0,-2, 1},
@@ -104,7 +104,7 @@ struct Voroce
 			{0, -1, 0,-1, 1, 1,-1, 0, 1, -1, 0,-2,-2, 1,-2}
 		};
 
-		const int vs[4][15] =
+		const int32_t vs[4][15] =
 		{
 			{0,  0, 1, 1,-1,-1, 0, 1,-1,  0, 1, 2, 2,-1, 2},
 			{0,  0, 1, 1,-1,-1, 0, 1,-1,  0, 1, 2, 2,-1, 2},
@@ -119,9 +119,9 @@ struct Voroce
 		auto worley = std::numeric_limits<float>::max();
 		auto result = 0;
 
-		std::array<float, 5> ranges = { 0, 1, 2,  4,  5 };
-		std::array<int  , 5> lowers = { 0, 4, 8,  9, 13 };
-		std::array<int  , 5> uppers = { 4, 8, 9, 13, 15 };
+		std::array<  float, 5> ranges = { 0, 1, 2,  4,  5 };
+		std::array<int32_t, 5> lowers = { 0, 4, 8,  9, 13 };
+		std::array<int32_t, 5> uppers = { 4, 8, 9, 13, 15 };
 
 		for (auto dist = 0; dist < 5; ++dist)
 		{
@@ -131,11 +131,11 @@ struct Voroce
 				{
 					const auto u = us[quadrant][loop];
 					const auto v = vs[quadrant][loop];
-					const auto hash    = Hash2D(int_x + u, int_y + v);
-					const auto offsetX = OffsetX(hash);
-					const auto offsetY = OffsetY(hash);
-					const auto jitter  = origin + glm::vec2(u + offsetX, v + offsetY);
-					const auto tmp     = glm::dot(source - jitter, source - jitter);
+					const auto hash    = hash_2d(int_x + u, int_y + v);
+					const auto offsetX = OffsetX(hash, jitter);
+					const auto offsetY = OffsetY(hash, jitter);
+					const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
+					const auto tmp     = glm::dot(source - sample, source - sample);
 					if (worley > tmp)
 					{
 						worley = tmp;
@@ -153,21 +153,23 @@ struct Voroce
 	}
 
 	// reference implementation
-	static std::pair<int, float> Evaluate3DRef(const glm::vec3& source)
+	static std::pair<int, float> Evaluate3DRef(const glm::vec3& source, const int32_t (*hash_3d)(const int32_t, const int32_t, const int32_t), const float jitter = 1.0f)
 	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
 		const auto flt_x = std::floor(source.x);
 		const auto flt_y = std::floor(source.y);
 		const auto flt_z = std::floor(source.z);
-		const auto int_x = (int32_t)flt_x;
-		const auto int_y = (int32_t)flt_y;
-		const auto int_z = (int32_t)flt_z;
+		const auto int_x = int32_t(flt_x);
+		const auto int_y = int32_t(flt_y);
+		const auto int_z = int32_t(flt_z);
 		const auto origin = glm::vec3(flt_x, flt_y, flt_z);
 
 		const auto size = 117;
 
-		const int us[size] = { -1, 0, 1,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-1, 0, 1,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-1, 0, 1,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-1, 0, 1 };
-		const int vs[size] = { -2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2 };
-		const int ws[size] = { -2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+		const std::array<int32_t, size> us = { -1, 0, 1,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-1, 0, 1,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-1, 0, 1,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-2,-1, 0, 1, 2,-1, 0, 1 };
+		const std::array<int32_t, size> vs = { -2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2 };
+		const std::array<int32_t, size> ws = { -2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
 
 		auto worley = std::numeric_limits<float>::max();
 		auto result = 0;
@@ -176,12 +178,12 @@ struct Voroce
 			const auto u = us[loop];
 			const auto v = vs[loop];
 			const auto w = ws[loop];
-			const auto hash    = Hash3D(int_x + u, int_y + v, int_z + w);
-			const auto offsetX = OffsetX(hash);
-			const auto offsetY = OffsetY(hash);
-			const auto offsetZ = OffsetZ(hash);
-			const auto jitter  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
-			const auto tmp     = glm::dot(source - jitter, source - jitter);
+			const auto hash    = hash_3d(int_x + u, int_y + v, int_z + w);
+			const auto offsetX = OffsetX(hash, jitter);
+			const auto offsetY = OffsetY(hash, jitter);
+			const auto offsetZ = OffsetZ(hash, jitter);
+			const auto sample  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
+			const auto tmp     = glm::dot(source - sample, source - sample);
 			if (worley > tmp)
 			{
 				worley = tmp;
@@ -193,14 +195,16 @@ struct Voroce
 	}
 
 	// octant optimization
-	static std::pair<int, float> Evaluate3DOpt(const glm::vec3& source)
+	static std::pair<int, float> Evaluate3DOpt(const glm::vec3& source, const int32_t (*hash_3d)(const int32_t, const int32_t, const int32_t), const float jitter = 1.0f)
 	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
 		const auto flt_x = std::floor(source.x);
 		const auto flt_y = std::floor(source.y);
 		const auto flt_z = std::floor(source.z);
-		const auto int_x = (int32_t)flt_x;
-		const auto int_y = (int32_t)flt_y;
-		const auto int_z = (int32_t)flt_z;
+		const auto int_x = int32_t(flt_x);
+		const auto int_y = int32_t(flt_y);
+		const auto int_z = int32_t(flt_z);
 		const auto origin = glm::vec3(flt_x, flt_y, flt_z);
 
 		// octant selection
@@ -250,9 +254,9 @@ struct Voroce
 		auto worley = std::numeric_limits<float>::max();
 		auto result = 0;
 
-		std::array<float, 11> ranges = { 0,  1,  2,  3,  4,  5,  6,  8,  9, 10, 11 };
-		std::array<int,   11> lowers = { 0,  8, 20, 26, 27, 39, 51, 54, 60, 75, 87 };
-		std::array<int,   11> uppers = { 8, 20, 26, 27, 39, 51, 54, 60, 75, 87, 90 };
+		std::array<  float, 11> ranges = { 0,  1,  2,  3,  4,  5,  6,  8,  9, 10, 11 };
+		std::array<int32_t, 11> lowers = { 0,  8, 20, 26, 27, 39, 51, 54, 60, 75, 87 };
+		std::array<int32_t, 11> uppers = { 8, 20, 26, 27, 39, 51, 54, 60, 75, 87, 90 };
 
 		for (auto dist = 0; dist < 11; ++dist)
 		{
@@ -263,12 +267,12 @@ struct Voroce
 					const auto u = us[octant][loop];
 					const auto v = vs[octant][loop];
 					const auto w = ws[octant][loop];
-					const auto hash    = Hash3D(int_x + u, int_y + v, int_z + w);
-					const auto offsetX = OffsetX(hash);
-					const auto offsetY = OffsetY(hash);
-					const auto offsetZ = OffsetZ(hash);
-					const auto jitter  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
-					const auto tmp     = glm::dot(source - jitter, source - jitter);
+					const auto hash    = hash_3d(int_x + u, int_y + v, int_z + w);
+					const auto offsetX = OffsetX(hash, jitter);
+					const auto offsetY = OffsetY(hash, jitter);
+					const auto offsetZ = OffsetZ(hash, jitter);
+					const auto sample  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
+					const auto tmp     = glm::dot(source - sample, source - sample);
 					if (worley > tmp)
 					{
 						worley = tmp;

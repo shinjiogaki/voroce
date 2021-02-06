@@ -18,7 +18,7 @@ int main()
 		{
 			const auto x = (i + 0.5f) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voroce::Evaluate2DRef(glm::vec2(x * 32 - 16, y * 32 - 16)).first;
+			volatile auto v = Voroce::Evaluate2DRef(glm::vec2(x * 32 - 16, y * 32 - 16), Voroce::Hash2DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -31,7 +31,7 @@ int main()
 		{
 			const auto x = (i + 0.5f) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voroce::Evaluate2DOpt(glm::vec2(x * 32 - 16, y * 32 - 16)).first;
+			volatile auto v = Voroce::Evaluate2DOpt(glm::vec2(x * 32 - 16, y * 32 - 16), Voroce::Hash2DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -43,8 +43,8 @@ int main()
 		{
 			const auto x = (i + 0.5f) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			const auto ref = Voroce::Evaluate2DRef(glm::vec2(x * 32 - 16, y * 32 - 16)).first;
-			const auto opt = Voroce::Evaluate2DOpt(glm::vec2(x * 32 - 16, y * 32 - 16)).first;
+			const auto ref = Voroce::Evaluate2DRef(glm::vec2(x * 32 - 16, y * 32 - 16), Voroce::Hash2DLowQuality).first;
+			const auto opt = Voroce::Evaluate2DOpt(glm::vec2(x * 32 - 16, y * 32 - 16), Voroce::Hash2DLowQuality).first;
 			if (ref != opt)
 			{
 				std::cout << "NG: (" << x << "," << y << ") ref:" << ref << " opt:" << opt << std::endl;
@@ -59,7 +59,7 @@ int main()
 			const auto x = (i + 0.5f) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voroce::Evaluate3DRef(glm::vec3(x * 32 - 16, y * 32 - 16, z * 32 - 16)).first;
+			volatile auto v = Voroce::Evaluate3DRef(glm::vec3(x * 32 - 16, y * 32 - 16, z * 32 - 16), Voroce::Hash3DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -73,7 +73,7 @@ int main()
 			const auto x = (i + 0.5f) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voroce::Evaluate3DOpt(glm::vec3(x * 32 - 16, y * 32 - 16, z * 32 - 16)).first;
+			volatile auto v = Voroce::Evaluate3DOpt(glm::vec3(x * 32 - 16, y * 32 - 16, z * 32 - 16), Voroce::Hash3DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -85,8 +85,8 @@ int main()
 		{
 			const auto x = (i + 0.5f) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			const auto ref = Voroce::Evaluate3DRef(glm::vec3(x * 32 - 16, y * 32 - 16, y * 32 - 16)).first;
-			const auto opt = Voroce::Evaluate3DOpt(glm::vec3(x * 32 - 16, y * 32 - 16, y * 32 - 16)).first;
+			const auto ref = Voroce::Evaluate3DRef(glm::vec3(x * 32 - 16, y * 32 - 16, y * 32 - 16), Voroce::Hash3DLowQuality).first;
+			const auto opt = Voroce::Evaluate3DOpt(glm::vec3(x * 32 - 16, y * 32 - 16, y * 32 - 16), Voroce::Hash3DLowQuality).first;
 			if (ref != opt)
 			{
 				std::cout << "NG: (" << x << "," << y << ") ref:" << ref << " opt:" << opt << std::endl;
