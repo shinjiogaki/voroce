@@ -7,7 +7,7 @@
 
 I have a couple of ideas to speed up. So stay tuned!
 
-## Performance Comparison
+## Cost Comparison
 
 |      |  naive impl |  optimized |
 | ---- | ----------: | ---------: |
