@@ -47,19 +47,18 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		// 1 (self) + 20 (neighbours)
-		const std::array<int32_t, 21> us = { 0, 1, 0, -1,  0, 1, -1, -1,  1, 2, 0, -2,  0, 2, 1, -2,  1,  2, -1, -2, -1 };
-		const std::array<int32_t, 21> vs = { 0, 0, 1,  0, -1, 1,  1, -1, -1, 0, 2,  0, -2, 1, 2,  1, -2, -1,  2, -1, -2 };
-
 		const auto flt_x = std::floor(source.x);
 		const auto flt_y = std::floor(source.y);
 		const auto int_x = int32_t(flt_x);
 		const auto int_y = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
 
-		auto worley = std::numeric_limits<float>::max();
-		auto result = 0;
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
 
+		// 1 (self) + 20 (neighbours)
+		const std::array<int32_t, 21> us = { 0, 1, 0, -1,  0, 1, -1, -1,  1, 2, 0, -2,  0, 2, 1, -2,  1,  2, -1, -2, -1 };
+		const std::array<int32_t, 21> vs = { 0, 0, 1,  0, -1, 1,  1, -1, -1, 0, 2,  0, -2, 1, 2,  1, -2, -1,  2, -1, -2 };
 		for (auto loop = 0; loop < 21; ++loop)
 		{
 			const auto u = us[loop];
@@ -70,14 +69,14 @@ struct Voroce
 			const auto offsetY = OffsetY(hash, jitter);
 			const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
 			const auto tmp     = glm::dot(source - sample, source - sample);
-			if (worley > tmp)
+			if (sq_dist > tmp)
 			{
-				worley = tmp;
-				result = hash;
+				sq_dist = tmp;
+				cell_id = hash;
 			}
 		}
 
-		return std::make_pair(result, worley);
+		return std::make_pair(cell_id, sq_dist);
 	}
 
 	// quadrant optimization
@@ -90,6 +89,14 @@ struct Voroce
 		const auto int_x = int32_t(flt_x);
 		const auto int_y = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
+
+		// early termination
+		if (0.0f == jitter)
+		{
+			const auto hash   = hash_2d(int_x, int_y);
+			const auto sample = origin + 0.5f;
+			return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		}
 
 		// octant selection
 		auto quadrant = 0;
@@ -116,8 +123,8 @@ struct Voroce
 		// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14
 		// 0, 0, 0, 0, 1, 1, 1, 1, 2, 4, 4, 4, 4, 5, 5
 
-		auto worley = std::numeric_limits<float>::max();
-		auto result = 0;
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
 
 		std::array<  float, 5> ranges = { 0, 1, 2,  4,  5 };
 		std::array<int32_t, 5> lowers = { 0, 4, 8,  9, 13 };
@@ -125,7 +132,7 @@ struct Voroce
 
 		for (auto dist = 0; dist < 5; ++dist)
 		{
-			if (ranges[dist] < worley * 4)
+			if (ranges[dist] < sq_dist * 4)
 			{
 				for (auto loop = lowers[dist]; loop < uppers[dist]; ++loop)
 				{
@@ -136,10 +143,10 @@ struct Voroce
 					const auto offsetY = OffsetY(hash, jitter);
 					const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
 					const auto tmp     = glm::dot(source - sample, source - sample);
-					if (worley > tmp)
+					if (sq_dist > tmp)
 					{
-						worley = tmp;
-						result = hash;
+						sq_dist = tmp;
+						cell_id = hash;
 					}
 				}
 			}
@@ -149,7 +156,7 @@ struct Voroce
 			}
 		}
 
-		return std::make_pair(result, worley);
+		return std::make_pair(cell_id, sq_dist);
 	}
 
 	// reference implementation
@@ -171,8 +178,8 @@ struct Voroce
 		const std::array<int32_t, size> vs = { -2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2 };
 		const std::array<int32_t, size> ws = { -2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
 
-		auto worley = std::numeric_limits<float>::max();
-		auto result = 0;
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
 		for (auto loop = 0; loop < size; ++loop)
 		{
 			const auto u = us[loop];
@@ -184,14 +191,14 @@ struct Voroce
 			const auto offsetZ = OffsetZ(hash, jitter);
 			const auto sample  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
 			const auto tmp     = glm::dot(source - sample, source - sample);
-			if (worley > tmp)
+			if (sq_dist > tmp)
 			{
-				worley = tmp;
-				result = hash;
+				sq_dist = tmp;
+				cell_id = hash;
 			}
 		}
 
-		return std::make_pair(result, worley);
+		return std::make_pair(cell_id, sq_dist);
 	}
 
 	// octant optimization
@@ -206,6 +213,14 @@ struct Voroce
 		const auto int_y = int32_t(flt_y);
 		const auto int_z = int32_t(flt_z);
 		const auto origin = glm::vec3(flt_x, flt_y, flt_z);
+
+		// early termination
+		if (0.0f == jitter)
+		{
+			const auto hash   = hash_3d(int_x, int_y, int_z);
+			const auto sample = origin + 0.5f;
+			return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		}
 
 		// octant selection
 		auto octant = 0;
@@ -251,8 +266,8 @@ struct Voroce
 		// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,
 		// 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,
 
-		auto worley = std::numeric_limits<float>::max();
-		auto result = 0;
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
 
 		std::array<  float, 11> ranges = { 0,  1,  2,  3,  4,  5,  6,  8,  9, 10, 11 };
 		std::array<int32_t, 11> lowers = { 0,  8, 20, 26, 27, 39, 51, 54, 60, 75, 87 };
@@ -260,7 +275,7 @@ struct Voroce
 
 		for (auto dist = 0; dist < 11; ++dist)
 		{
-			if (ranges[dist] < worley * 4)
+			if (ranges[dist] < sq_dist * 4)
 			{
 				for (auto loop = lowers[dist]; loop < uppers[dist]; ++loop)
 				{
@@ -273,10 +288,10 @@ struct Voroce
 					const auto offsetZ = OffsetZ(hash, jitter);
 					const auto sample  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
 					const auto tmp     = glm::dot(source - sample, source - sample);
-					if (worley > tmp)
+					if (sq_dist > tmp)
 					{
-						worley = tmp;
-						result = hash;
+						sq_dist = tmp;
+						cell_id = hash;
 					}
 				}
 			}
@@ -286,6 +301,6 @@ struct Voroce
 			}
 		}
 
-		return std::make_pair(result, worley);
+		return std::make_pair(cell_id, sq_dist);
 	}
 };
