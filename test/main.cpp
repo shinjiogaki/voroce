@@ -5,7 +5,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "voroce.h"
+#include "../include/voroce.h"
 
 int main()
 {
