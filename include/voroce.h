@@ -34,12 +34,12 @@ struct Voroce
 
 	static auto OffsetY(const int32_t seed, const float jitter)
 	{
-		return ((seed * LCG) / float(0xFFFFFFFF)) + 0.5f;
+		return ((seed * LCG) / float(0xFFFFFFFF)) * jitter + 0.5f;
 	}
 
 	static auto OffsetZ(const int32_t seed, const float jitter)
 	{
-		return ((seed * LCG * LCG) / float(0xFFFFFFFF)) + 0.5f;
+		return ((seed * LCG * LCG) / float(0xFFFFFFFF)) * jitter + 0.5f;
 	}
 
 	// naive implementation
