@@ -214,14 +214,6 @@ struct Voroce
 		const auto int_z = int32_t(flt_z);
 		const auto origin = glm::vec3(flt_x, flt_y, flt_z);
 
-		// early termination
-		if (0.0f == jitter)
-		{
-			const auto hash   = hash_3d(int_x, int_y, int_z);
-			const auto sample = origin + 0.5f;
-			return std::make_pair(hash, glm::dot(source - sample, source - sample));
-		}
-
 		// octant selection
 		auto octant = 0;
 		if (0.5f > source.x - origin.x) { octant += 1; }
@@ -268,7 +260,6 @@ struct Voroce
 
 		auto sq_dist = std::numeric_limits<float>::max();
 		auto cell_id = 0;
-
 		std::array<  float, 11> ranges = { 0,  1,  2,  3,  4,  5,  6,  8,  9, 10, 11 };
 		std::array<int32_t, 11> lowers = { 0,  8, 20, 26, 27, 39, 51, 54, 60, 75, 87 };
 		std::array<int32_t, 11> uppers = { 8, 20, 26, 27, 39, 51, 54, 60, 75, 87, 90 };
