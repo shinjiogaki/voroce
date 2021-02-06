@@ -11,8 +11,9 @@ struct Voroce
 	// https://matthias-research.github.io/pages/publications/tetraederCollision.pdf
 
 	static const auto PrimeU = 73856093;
-	static const auto PrimeV = 19349663;
+	static const auto PrimeV = 13467053;
 	static const auto PrimeW = 83492791;
+	static const auto PrimeT = 23469181;
 	static const auto LCG    = 48271;
 
 	static const int32_t Hash2DLowQuality(const int32_t u, const int32_t v)
@@ -23,6 +24,11 @@ struct Voroce
 	static const int32_t Hash3DLowQuality(const int32_t u, const int32_t v, const int32_t w)
 	{
 		return ((u * PrimeU) ^ (v * PrimeV) ^ (w * PrimeW)) * LCG;
+	}
+
+	static const int32_t Hash4DLowQuality(const int32_t u, const int32_t v, const int32_t w, const int32_t t)
+	{
+		return ((u * PrimeU) ^ (v * PrimeV) ^ (w * PrimeW) ^ (t * PrimeT)) * LCG;
 	}
 
 	// minstd_rand (TODO: use better hash, do something beter here, fast but a bit ugly...)
@@ -40,6 +46,11 @@ struct Voroce
 	static auto OffsetZ(const int32_t seed, const float jitter)
 	{
 		return (((seed * LCG) * LCG) / float(0xFFFFFFFF)) * jitter + 0.5f;
+	}
+
+	static auto OffsetT(const int32_t seed, const float jitter)
+	{
+		return ((((seed * LCG) * LCG) * LCG) / float(0xFFFFFFFF)) * jitter + 0.5f;
 	}
 
 	// naive implementation
@@ -158,7 +169,7 @@ struct Voroce
 		return std::make_pair(cell_id, sq_dist);
 	}
 
-	// reference implementation
+	// naive implementation
 	static std::pair<int, float> Evaluate3DRef(const glm::vec3& source, const int32_t (*hash_3d)(const int32_t, const int32_t, const int32_t), const float jitter = 1.0f)
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
@@ -216,7 +227,7 @@ struct Voroce
 		// early termination
 		if (0.0f == jitter)
 		{
-			const auto hash = hash_3d(int_x, int_y, int_z);
+			const auto hash   = hash_3d(int_x, int_y, int_z);
 			const auto sample = origin + 0.5f;
 			return std::make_pair(hash, glm::dot(source - sample, source - sample));
 		}
@@ -298,6 +309,54 @@ struct Voroce
 			}
 		}
 
+		return std::make_pair(cell_id, sq_dist);
+	}
+
+	// naive implementation
+	static std::pair<int, float> Evaluate4DRef(const glm::vec4& source, const int32_t (*hash_3d)(const int32_t, const int32_t, const int32_t, const int32_t), const float jitter = 1.0f)
+	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
+		const auto flt_x = std::floor(source.x);
+		const auto flt_y = std::floor(source.y);
+		const auto flt_z = std::floor(source.z);
+		const auto flt_t = std::floor(source.w);
+		const auto int_x = int32_t(flt_x);
+		const auto int_y = int32_t(flt_y);
+		const auto int_z = int32_t(flt_z);
+		const auto int_t = int32_t(flt_t);
+		const auto origin = glm::vec4(flt_x, flt_y, flt_z, flt_t);
+
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
+		for (auto t = -2; t <= 2; ++t)
+		{
+			for (auto w = -2; w <= 2; ++w)
+			{
+				for (auto v = -2; v <= 2; ++v)
+				{
+					for (auto u = -2; u <= 2; ++u)
+					{
+						if (2 == std::abs(u) && 2 == std::abs(v) && 2 == std::abs(w) && 2 == std::abs(t))
+						{
+							continue;
+						}
+						const auto hash    = hash_3d(int_x + u, int_y + v, int_z + w, int_t + t);
+						const auto offsetX = OffsetX(hash, jitter);
+						const auto offsetY = OffsetY(hash, jitter);
+						const auto offsetZ = OffsetZ(hash, jitter);
+						const auto offsetT = OffsetT(hash, jitter);
+						const auto sample  = origin + glm::vec4(u + offsetX, v + offsetY, w + offsetZ, t + offsetT);
+						const auto tmp     = glm::dot(source - sample, source - sample);
+						if (sq_dist > tmp)
+						{
+							sq_dist = tmp;
+							cell_id = hash;
+						}
+					}
+				}
+			}
+		}
 		return std::make_pair(cell_id, sq_dist);
 	}
 };

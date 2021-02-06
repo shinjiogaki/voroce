@@ -10,7 +10,7 @@
 int main()
 {
 	const auto golden_ratio = 1.61803398875;
-	const auto N = 10000000;
+	const auto N = 20000000;
 
 	{
 		const auto start = std::chrono::system_clock::now();
