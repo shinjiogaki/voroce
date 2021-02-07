@@ -3,7 +3,6 @@
 
 #include "glm/glm.hpp"
 #include <array>
-#include <functional>
 
 struct Voroce
 {
