@@ -1,7 +1,9 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
 
+#include <algorithm>
 #include <chrono>
+#include <execution>
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -12,7 +14,7 @@ int main()
 {
 	const auto golden_ratio = 1.61803398875;
 	const auto N = 1000000;
-	const auto T = 100000000;
+	const auto T = 10000000;
 
 	{
 		const auto start = std::chrono::system_clock::now();
@@ -114,48 +116,78 @@ int main()
 	}
 
 	{
-		std::mt19937 mt(1);
-		std::uniform_real_distribution<float> uni(0.0f, 1.0f);
-		for (auto i = 0; i < T; ++i)
+		std::mt19937 mt(15);
+		std::uniform_real_distribution<double> uni(0.0f, 1.0f);
+		for (auto L = 0; L < 32; ++L)
 		{
-			if (i % 1000000 == 0)
+			std::cout << "2d: " << L << std::endl;
+			std::vector<std::tuple<double, double>> RND(T);
+			for (auto& r : RND)
 			{
-				std::cout << "3d: " << i << std::endl;
+				r = { uni(mt), uni(mt) };
 			}
-			const auto x = uni(mt);
-			const auto y = uni(mt);
-			const auto z = uni(mt);
-			const auto jitter = uni(mt);
-			const auto ref = Voroce::Evaluate3DRef(glm::vec3(x * 128 - 64, y * 128 - 64, z * 128 - 64), Voroce::Hash3DLowQuality, jitter);
-			const auto opt = Voroce::Evaluate3DOpt(glm::vec3(x * 128 - 64, y * 128 - 64, z * 128 - 64), Voroce::Hash3DLowQuality, jitter);
-			if (ref.second != opt.second)
+			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double>& tuple)
+				{
+					const auto [x, y] = tuple;
+					const auto jitter = 1.0f;
+					const auto ref = Voroce::Evaluate2DRef(glm::vec2(x * 128 - 64, y * 128 - 64), Voroce::Hash2DLowQuality, jitter);
+					const auto opt = Voroce::Evaluate2DOpt(glm::vec2(x * 128 - 64, y * 128 - 64), Voroce::Hash2DLowQuality, jitter);
+					if (ref.second != opt.second)
+					{
+						std::cout << "NG: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << " jitter:" << jitter << std::endl;
+					}
+				});
+		}
+	}
+
+	{
+		std::mt19937 mt(15);
+		std::uniform_real_distribution<double> uni(0.0f, 1.0f);
+		for (auto L = 0; L < 32; ++L)
+		{
+			std::cout << "3d: " << L << std::endl;
+			std::vector<std::tuple<double, double, double>> RND(T);
+			for (auto& r : RND)
 			{
-				std::cout << "3D NG: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << " jitter:" << jitter << std::endl;
+				r = { uni(mt), uni(mt), uni(mt) };
 			}
+			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double, double>& tuple)
+				{
+					const auto [x, y, z] = tuple;
+					const auto jitter = 1.0f;
+					const auto ref = Voroce::Evaluate3DRef(glm::vec3(x * 128 - 64, y * 128 - 64, z * 128 - 64), Voroce::Hash3DLowQuality, jitter);
+					const auto opt = Voroce::Evaluate3DOpt(glm::vec3(x * 128 - 64, y * 128 - 64, z * 128 - 64), Voroce::Hash3DLowQuality, jitter);
+					if (ref.second != opt.second)
+					{
+						std::cout << "NG: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << " jitter:" << jitter << std::endl;
+					}
+				});
 		}
 	}
 
 	{
 		// bug or numerical error
 		std::mt19937 mt(15);
-		std::uniform_real_distribution<float> uni(0.0f, 1.0f);
-		for (auto i = 0; i < T; ++i)
+		std::uniform_real_distribution<double> uni(0.0f, 1.0f);
+		for (auto L = 0; L < 32; ++L)
 		{
-			if (i % 1000000 == 0)
+			std::cout << "4d: " << L << std::endl;
+			std::vector<std::tuple<double, double, double, double>> RND(T);
+			for (auto& r : RND)
 			{
-				std::cout << "4d: " << i << std::endl;
+				r = { uni(mt), uni(mt), uni(mt), uni(mt) };
 			}
-			const auto x = uni(mt);
-			const auto y = uni(mt);
-			const auto z = uni(mt);
-			const auto t = uni(mt);
-			const auto jitter = uni(mt);
-			const auto ref = Voroce::Evaluate4DRef(glm::vec4(x * 128 - 64, z * 128 - 64, z * 128 - 64, t * 128 - 64), Voroce::Hash4DLowQuality, jitter);
-			const auto opt = Voroce::Evaluate4DOpt(glm::vec4(x * 128 - 64, z * 128 - 64, z * 128 - 64, t * 128 - 64), Voroce::Hash4DLowQuality, jitter);
-			if (ref.second != opt.second)
-			{
-				std::cout << "NG: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << " jitter:" << jitter << std::endl;
-			}
+			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double, double, double>& tuple)
+				{
+					const auto [x, y, z, t] = tuple;
+					const auto jitter = 1.0f;
+					const auto ref = Voroce::Evaluate4DRef(glm::vec4(x * 128 - 64, y * 128 - 64, z * 128 - 64, t * 128 - 64), Voroce::Hash4DLowQuality, jitter);
+					const auto opt = Voroce::Evaluate4DOpt(glm::vec4(x * 128 - 64, y * 128 - 64, z * 128 - 64, t * 128 - 64), Voroce::Hash4DLowQuality, jitter);
+					if (ref.second != opt.second)
+					{
+						std::cout << "NG: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << " jitter:" << jitter << std::endl;
+					}
+				});
 		}
 	}
 }
