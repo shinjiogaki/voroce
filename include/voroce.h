@@ -136,10 +136,6 @@ struct Voroce
 
 		if (0.5f >= jitter)
 		{
-			// cell id and possible minimum squared distance
-			// 0, 1, 2, 3
-			// 2, 2, 2, 2
-
 			for (auto loop = 0; loop < 4; ++loop)
 			{
 				const auto u = us[quadrant][loop];
