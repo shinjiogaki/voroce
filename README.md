@@ -1,4 +1,4 @@
-![MSBuild](https://github.com/shinjiogaki/voroce/workflows/MSBuild/badge.svg)
+![MSBuild](https://github.com/shinjiogaki/voroce/workflows/MSBuild/badge.svg?branch=main)
 
 # voroce
 <img src="img/stone.jpg" alt="stone" title="stone" width="320"><img src="img/flake.png" alt="flake" title="flake" width="320">
