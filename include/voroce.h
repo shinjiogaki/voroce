@@ -1,7 +1,7 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
 
-#include "./voroce/glm/glm.hpp"
+#include "..\glm\glm\glm.hpp"
 #include <array>
 
 struct Voroce
