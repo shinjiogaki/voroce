@@ -1,7 +1,7 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
 
-#include "..\glm\glm\glm.hpp"
+#include "glm/glm.hpp"
 #include <array>
 
 struct Voroce
@@ -295,7 +295,6 @@ struct Voroce
 			{ 0,-1, 0, 0,-1,-1, 0,-1, 0, 0, 1,-1,-1, 0, 0, 1, 1,-1,-1, 1, 0, 1, 1,-1, 1, 1, 1,-2, 0, 0,-2,-2,-1,-1, 0, 0,-2,-1,-1},
 		};
 
-
 		auto sq_dist = std::numeric_limits<float>::max();
 		auto cell_id = 0;
 
@@ -419,6 +418,7 @@ struct Voroce
 				}
 			}
 		}
+
 		return std::make_pair(cell_id, sq_dist);
 	}
 
