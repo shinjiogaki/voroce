@@ -32,7 +32,7 @@ Table 1: The number of cells to traverse
 * [x] optimized code path for small jitter values
 * [x] honeycomb (2D)
 * [ ] optimized honeycomb (2D)
-* [x] cache (2D) (brings nearly x2 sppedup for primary rays)
+* [x] cache (2D) (brings nearly 2x speedup for primary rays)
 * [ ] cache (3D)
 * [ ] cache (4D)
 
