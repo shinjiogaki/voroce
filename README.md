@@ -6,6 +6,7 @@
 
 <div align="center">
 <img src="img/stone.jpg" alt="stone" title="stone" width="480"><img src="img/flake.png" alt="flake" title="flake" width="480">
+<img src="img/rect.gif" alt="rect grid" title="rect grid" width="480"><img src="img/honeycomb.gif" alt="tri grid" title="tri grid" width="480">
 </div>
 
 **voroce** is a fast and simple voronoi class useful to create images like the above ones. **voroce** is a coind word of **voronoi** & **veloce**.
@@ -27,17 +28,15 @@ Table 1: The number of cells to traverse
 
 ## Features
 
-<div align="center">
-<img src="img/rect.gif" alt="rect grid" title="rect grid" width="480"><img src="img/honeycomb.gif" alt="tri grid" title="tri grid" width="480">
-</div>
-
 * [x] sample point jittering
 * [x] optimized code path for small jitter values
 * [x] honeycomb (2D)
 * [ ] optimized honeycomb (2D)
-* [ ] cache
+* [x] cache (2D) (brings nearly x2 sppedup for primary rays)
+* [ ] cache (3D)
+* [ ] cache (4D)
 
-I have many ideas. So stay tuned!
+I have many ideas. Stay tuned!
 
 ## Cost Comparison
 

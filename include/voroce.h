@@ -77,10 +77,10 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto flt_x = std::floor(source.x);
-		const auto flt_y = std::floor(source.y);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
 
 		auto sq_dist = std::numeric_limits<float>::max();
@@ -116,10 +116,10 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto flt_x = std::floor(source.x);
-		const auto flt_y = std::floor(source.y);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
 
 		// early termination
@@ -158,8 +158,8 @@ struct Voroce
 		{
 			for (auto loop = 0; loop < 4; ++loop)
 			{
-				const auto u = us[quadrant][loop];
-				const auto v = vs[quadrant][loop];
+				const auto u       = us[quadrant][loop];
+				const auto v       = vs[quadrant][loop];
 				const auto hash    = my_hash(int_x + u, int_y + v);
 				const auto offsetX = OffsetX(hash, jitter);
 				const auto offsetY = OffsetY(hash, jitter);
@@ -187,8 +187,8 @@ struct Voroce
 			{
 				for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
 				{
-					const auto u = us[quadrant][loop];
-					const auto v = vs[quadrant][loop];
+					const auto u       = us[quadrant][loop];
+					const auto v       = vs[quadrant][loop];
 					const auto hash    = my_hash(int_x + u, int_y + v);
 					const auto offsetX = OffsetX(hash, jitter);
 					const auto offsetY = OffsetY(hash, jitter);
@@ -210,17 +210,183 @@ struct Voroce
 		return std::make_pair(cell_id, sq_dist);
 	}
 
+	// quadrant optimization
+	int32_t   cache2d_cell_id  = 0xFFFFFFFF;
+	int32_t   cache2d_quadrant = 0;
+	int32_t   cache2d_counter  = 0;
+	int32_t   cache2d_cell_ids[16];
+	glm::vec2 cache2d_samples [16];
+	std::pair<int, float> Evaluate2DCache(const glm::vec2& source, const int32_t(*my_hash)(const int32_t, const int32_t), const float jitter = 1.0f)
+	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
+		const auto origin = glm::vec2(flt_x, flt_y);
+
+		// early termination
+		if (0.0f == jitter)
+		{
+			const auto hash   = my_hash(int_x, int_y);
+			const auto sample = origin + 0.5f;
+			return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		}
+
+		// quadrant selection
+		auto quadrant = 0;
+		if (0.5f > source.x - origin.x) { quadrant += 1; }
+		if (0.5f > source.y - origin.y) { quadrant += 2; }
+
+		const int32_t us[4][13] =
+		{
+			{ 0, 1, 0, 1, 0,-1, 1,-1,-1, 2, 0, 2, 1},
+			{ 0,-1, 0,-1, 0, 1,-1, 1, 1,-2, 0,-2,-1},
+			{ 0, 0, 1, 1,-1, 0,-1, 1,-1, 0, 2, 1, 2},
+			{ 0, 0,-1,-1, 1, 0, 1,-1, 1, 0,-2,-1,-2},
+		};
+
+		const int32_t vs[4][13] =
+		{
+			{ 0, 0, 1, 1,-1, 0,-1, 1,-1, 0, 2, 1, 2},
+			{ 0, 0, 1, 1,-1, 0,-1, 1,-1, 0, 2, 1, 2},
+			{ 0,-1, 0,-1, 0, 1,-1, 1, 1,-2, 0,-2,-1},
+			{ 0,-1, 0,-1, 0, 1,-1, 1, 1,-2, 0,-2,-1},
+		};
+
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
+
+		// fast enough
+		if (0.5f >= jitter)
+		{
+			for (auto loop = 0; loop < 4; ++loop)
+			{
+				const auto u       = us[quadrant][loop];
+				const auto v       = vs[quadrant][loop];
+				const auto hash    = my_hash(int_x + u, int_y + v);
+				const auto offsetX = OffsetX(hash, jitter);
+				const auto offsetY = OffsetY(hash, jitter);
+				const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
+				const auto tmp     = glm::dot(source - sample, source - sample);
+				if (sq_dist > tmp)
+				{
+					sq_dist = tmp;
+					cell_id = hash;
+				}
+			}
+
+			return std::make_pair(cell_id, sq_dist);
+		}
+
+		// cell id and possible minimum squared distance
+		// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12
+		// 0, 0, 0, 0, 1, 1, 1, 1, 2, 4, 4, 4, 4
+		const std::array<int32_t, 5> slices = { 0, 4, 8, 9, 13 };
+		const std::array<int32_t, 4> ranges = { 0, 1, 2, 4 };
+
+		const auto mine = my_hash(int_x, int_y);
+		if (cache2d_cell_id == mine && cache2d_quadrant == quadrant)
+		{
+			// cache hit
+			auto counter = 0;
+			for (auto dist = 0; dist < 4; ++dist)
+			{
+				if (ranges[dist] < sq_dist * 4)
+				{
+					for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
+					{
+						if (counter < cache2d_counter)
+						{
+							// reuse cache
+							const auto sample = cache2d_samples[counter];
+							const auto tmp    = glm::dot(source - sample, source - sample);
+							if (sq_dist > tmp)
+							{
+								sq_dist = tmp;
+								cell_id = cache2d_cell_ids[counter];
+							}
+						}
+						else
+						{
+							// fall back
+							const auto u       = us[quadrant][loop];
+							const auto v       = vs[quadrant][loop];
+							const auto hash    = my_hash(int_x + u, int_y + v);
+							const auto offsetX = OffsetX(hash, jitter);
+							const auto offsetY = OffsetY(hash, jitter);
+							const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
+							const auto tmp     = glm::dot(source - sample, source - sample);
+							if (sq_dist > tmp)
+							{
+								sq_dist = tmp;
+								cell_id = hash;
+							}
+						}
+						++counter;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			// cache miss
+			cache2d_cell_id  = mine;
+			cache2d_quadrant = quadrant;
+			cache2d_counter  = 0;
+
+			for (auto dist = 0; dist < 4; ++dist)
+			{
+				if (ranges[dist] < sq_dist * 4)
+				{
+					for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
+					{
+						const auto u       = us[quadrant][loop];
+						const auto v       = vs[quadrant][loop];
+						const auto hash    = my_hash(int_x + u, int_y + v);
+						const auto offsetX = OffsetX(hash, jitter);
+						const auto offsetY = OffsetY(hash, jitter);
+						const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
+						const auto tmp     = glm::dot(source - sample, source - sample);
+
+						// update cache
+						cache2d_samples [cache2d_counter] = sample;
+						cache2d_cell_ids[cache2d_counter] = hash;
+						++cache2d_counter;
+
+						if (sq_dist > tmp)
+						{
+							sq_dist = tmp;
+							cell_id = hash;
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		return std::make_pair(cell_id, sq_dist);
+	}
+
 	// naive honeycomb implementation
 	static std::pair<int32_t, float> Evaluate2DHex(const glm::vec2& source, const int32_t(*my_hash)(const int32_t, const int32_t), const float jitter = 1.0f)
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto one_3 = 1.0f / std::sqrt(3.0f);
-		const auto local = glm::vec2(glm::dot(glm::vec2(1.0f, -one_3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_3), source));
-		const auto flt_x = std::floor(local.x);
-		const auto flt_y = std::floor(local.y);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
+		const auto one_3  = 1.0f / std::sqrt(3.0f);
+		const auto local  = glm::vec2(glm::dot(glm::vec2(1.0f, -one_3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_3), source));
+		const auto flt_x  = std::floor(local.x);
+		const auto flt_y  = std::floor(local.y);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
 		const auto origin = glm::vec2(flt_x, flt_y);
 
 		auto sq_dist = std::numeric_limits<float>::max();
@@ -256,8 +422,8 @@ struct Voroce
 
 		for (auto loop = 0; loop < size; ++loop)
 		{
-			const auto u = us[loop];
-			const auto v = vs[loop];
+			const auto u    = us[loop];
+			const auto v    = vs[loop];
 			const auto hash = my_hash(int_x + u, int_y + v);
 
 			// lower triangle
@@ -267,9 +433,9 @@ struct Voroce
 				lower_triangle(randomX, randomY);
 				const auto offsetX = randomX * jitter + 1.0f / 3.0f;
 				const auto offsetY = randomY * jitter + 1.0f / 3.0f;
-				const auto sample = origin + glm::vec2(u + offsetX, v + offsetY);
-				const auto global = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
-				const auto tmp = glm::dot(source - global, source - global);
+				const auto sample  = origin + glm::vec2(u + offsetX, v + offsetY);
+				const auto global  = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
+				const auto tmp     = glm::dot(source - global, source - global);
 				if (sq_dist > tmp)
 				{
 					sq_dist = tmp;
@@ -284,9 +450,9 @@ struct Voroce
 				upper_triangle(randomX, randomY);
 				const auto offsetZ = randomX * jitter + 2.0f / 3.0f;
 				const auto offsetT = randomY * jitter + 2.0f / 3.0f;
-				const auto sample = origin + glm::vec2(u + offsetZ, v + offsetT);
-				const auto global = glm::vec2(glm::dot(glm::vec2(), sample), glm::dot(glm::vec2(), sample));
-				const auto tmp = glm::dot(source - global, source - global);
+				const auto sample  = origin + glm::vec2(u + offsetZ, v + offsetT);
+				const auto global  = glm::vec2(glm::dot(glm::vec2(), sample), glm::dot(glm::vec2(), sample));
+				const auto tmp     = glm::dot(source - global, source - global);
 				if (sq_dist > tmp)
 				{
 					sq_dist = tmp;
@@ -305,12 +471,12 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto flt_x = std::floor(source.x);
-		const auto flt_y = std::floor(source.y);
-		const auto flt_z = std::floor(source.z);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
-		const auto int_z = int32_t(flt_z);
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto flt_z  = std::floor(source.z);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
+		const auto int_z  = int32_t(flt_z);
 		const auto origin = glm::vec3(flt_x, flt_y, flt_z);
 
 		const auto size = 117;
@@ -323,9 +489,9 @@ struct Voroce
 		auto cell_id = 0;
 		for (auto loop = 0; loop < size; ++loop)
 		{
-			const auto u = us[loop];
-			const auto v = vs[loop];
-			const auto w = ws[loop];
+			const auto u       = us[loop];
+			const auto v       = vs[loop];
+			const auto w       = ws[loop];
 			const auto hash    = my_hash(int_x + u, int_y + v, int_z + w);
 			const auto offsetX = OffsetX(hash, jitter);
 			const auto offsetY = OffsetY(hash, jitter);
@@ -347,12 +513,12 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto flt_x = std::floor(source.x);
-		const auto flt_y = std::floor(source.y);
-		const auto flt_z = std::floor(source.z);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
-		const auto int_z = int32_t(flt_z);
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto flt_z  = std::floor(source.z);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
+		const auto int_z  = int32_t(flt_z);
 		const auto origin = glm::vec3(flt_x, flt_y, flt_z);
 
 		// early termination
@@ -421,15 +587,15 @@ struct Voroce
 				{
 					for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
 					{
-						const auto u = us[octant][loop];
-						const auto v = vs[octant][loop];
-						const auto w = ws[octant][loop];
-						const auto hash = my_hash(int_x + u, int_y + v, int_z + w);
+						const auto u       = us[octant][loop];
+						const auto v       = vs[octant][loop];
+						const auto w       = ws[octant][loop];
+						const auto hash    = my_hash(int_x + u, int_y + v, int_z + w);
 						const auto offsetX = OffsetX(hash, jitter);
 						const auto offsetY = OffsetY(hash, jitter);
 						const auto offsetZ = OffsetZ(hash, jitter);
-						const auto sample = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
-						const auto tmp = glm::dot(source - sample, source - sample);
+						const auto sample  = origin + glm::vec3(u + offsetX, v + offsetY, w + offsetZ);
+						const auto tmp     = glm::dot(source - sample, source - sample);
 						if (sq_dist > tmp)
 						{
 							sq_dist = tmp;
@@ -458,9 +624,9 @@ struct Voroce
 			{
 				for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
 				{
-					const auto u = us[octant][loop];
-					const auto v = vs[octant][loop];
-					const auto w = ws[octant][loop];
+					const auto u       = us[octant][loop];
+					const auto v       = vs[octant][loop];
+					const auto w       = ws[octant][loop];
 					const auto hash    = my_hash(int_x + u, int_y + v, int_z + w);
 					const auto offsetX = OffsetX(hash, jitter);
 					const auto offsetY = OffsetY(hash, jitter);
@@ -488,14 +654,14 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto flt_x = std::floor(source.x);
-		const auto flt_y = std::floor(source.y);
-		const auto flt_z = std::floor(source.z);
-		const auto flt_t = std::floor(source.w);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
-		const auto int_z = int32_t(flt_z);
-		const auto int_t = int32_t(flt_t);
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto flt_z  = std::floor(source.z);
+		const auto flt_t  = std::floor(source.w);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
+		const auto int_z  = int32_t(flt_z);
+		const auto int_t  = int32_t(flt_t);
 		const auto origin = glm::vec4(flt_x, flt_y, flt_z, flt_t);
 
 		auto sq_dist = std::numeric_limits<float>::max();
@@ -537,14 +703,14 @@ struct Voroce
 	{
 		assert(0.0f <= jitter && jitter <= 1.0f);
 
-		const auto flt_x = std::floor(source.x);
-		const auto flt_y = std::floor(source.y);
-		const auto flt_z = std::floor(source.z);
-		const auto flt_t = std::floor(source.w);
-		const auto int_x = int32_t(flt_x);
-		const auto int_y = int32_t(flt_y);
-		const auto int_z = int32_t(flt_z);
-		const auto int_t = int32_t(flt_t);
+		const auto flt_x  = std::floor(source.x);
+		const auto flt_y  = std::floor(source.y);
+		const auto flt_z  = std::floor(source.z);
+		const auto flt_t  = std::floor(source.w);
+		const auto int_x  = int32_t(flt_x);
+		const auto int_y  = int32_t(flt_y);
+		const auto int_z  = int32_t(flt_z);
+		const auto int_t  = int32_t(flt_t);
 		const auto origin = glm::vec4(flt_x, flt_y, flt_z, flt_t);
 
 		auto sq_dist = std::numeric_limits<float>::max();
@@ -660,17 +826,17 @@ struct Voroce
 				{
 					for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
 					{
-						const auto u = us[hextant][loop];
-						const auto v = vs[hextant][loop];
-						const auto w = ws[hextant][loop];
-						const auto t = ts[hextant][loop];
-						const auto hash = my_hash(int_x + u, int_y + v, int_z + w, int_t + t);
+						const auto u       = us[hextant][loop];
+						const auto v       = vs[hextant][loop];
+						const auto w       = ws[hextant][loop];
+						const auto t       = ts[hextant][loop];
+						const auto hash    = my_hash(int_x + u, int_y + v, int_z + w, int_t + t);
 						const auto offsetX = OffsetX(hash, jitter);
 						const auto offsetY = OffsetY(hash, jitter);
 						const auto offsetZ = OffsetZ(hash, jitter);
 						const auto offsetT = OffsetT(hash, jitter);
-						const auto sample = origin + glm::vec4(u + offsetX, v + offsetY, w + offsetZ, t + offsetT);
-						const auto tmp = glm::dot(source - sample, source - sample);
+						const auto sample  = origin + glm::vec4(u + offsetX, v + offsetY, w + offsetZ, t + offsetT);
+						const auto tmp     = glm::dot(source - sample, source - sample);
 						if (sq_dist > tmp)
 						{
 							sq_dist = tmp;
@@ -699,17 +865,17 @@ struct Voroce
 			{
 				for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
 				{
-					const auto u = us[hextant][loop];
-					const auto v = vs[hextant][loop];
-					const auto w = ws[hextant][loop];
-					const auto t = ts[hextant][loop];
+					const auto u       = us[hextant][loop];
+					const auto v       = vs[hextant][loop];
+					const auto w       = ws[hextant][loop];
+					const auto t       = ts[hextant][loop];
 					const auto hash    = my_hash(int_x + u, int_y + v, int_z + w, int_t + t);
 					const auto offsetX = OffsetX(hash, jitter);
 					const auto offsetY = OffsetY(hash, jitter);
 					const auto offsetZ = OffsetZ(hash, jitter);
 					const auto offsetT = OffsetT(hash, jitter);
 					const auto sample  = origin + glm::vec4(u + offsetX, v + offsetY, w + offsetZ, t + offsetT);
-					const auto tmp = glm::dot(source - sample, source - sample);
+					const auto tmp     = glm::dot(source - sample, source - sample);
 					if (sq_dist > tmp)
 					{
 						sq_dist = tmp;
