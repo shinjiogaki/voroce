@@ -32,6 +32,26 @@ struct Voroce
 
 	// minstd_rand (TODO: use better hash, do something beter here, fast but a bit ugly...)
 
+	static auto OffsetX(const int32_t seed)
+	{
+		return ((seed) / float(0xFFFFFFFF)) + 0.5f;
+	}
+
+	static auto OffsetY(const int32_t seed)
+	{
+		return ((seed * LCG) / float(0xFFFFFFFF)) + 0.5f;
+	}
+
+	static auto OffsetZ(const int32_t seed)
+	{
+		return (((seed * LCG) * LCG) / float(0xFFFFFFFF)) + 0.5f;
+	}
+
+	static auto OffsetT(const int32_t seed)
+	{
+		return ((((seed * LCG) * LCG) * LCG) / float(0xFFFFFFFF)) + 0.5f;
+	}
+
 	static auto OffsetX(const int32_t seed, const float jitter)
 	{
 		return ((seed) / float(0xFFFFFFFF)) * jitter + 0.5f;
@@ -189,6 +209,96 @@ struct Voroce
 
 		return std::make_pair(cell_id, sq_dist);
 	}
+
+	// naive honeycomb implementation
+	static std::pair<int32_t, float> Evaluate2DHex(const glm::vec2& source, const int32_t(*my_hash)(const int32_t, const int32_t), const float jitter = 1.0f)
+	{
+		assert(0.0f <= jitter && jitter <= 1.0f);
+
+		const auto one_3 = 1.0f / std::sqrt(3.0f);
+		const auto local = glm::vec2(glm::dot(glm::vec2(1.0f, -one_3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_3), source));
+		const auto flt_x = std::floor(local.x);
+		const auto flt_y = std::floor(local.y);
+		const auto int_x = int32_t(flt_x);
+		const auto int_y = int32_t(flt_y);
+		const auto origin = glm::vec2(flt_x, flt_y);
+
+		auto sq_dist = std::numeric_limits<float>::max();
+		auto cell_id = 0;
+
+		// 1 (self) + 8 (neighbours)
+		const auto size = 9;
+		const std::array<int32_t, size> us = { 0, 0,-1, 1, 0,-1, 1,-1, 1 };
+		const std::array<int32_t, size> vs = { 0,-1, 0, 0, 1,-1,-1, 1, 1 };
+
+		// "A Low-Distortion Map Between Triangle and Square" by Eric Heitz
+		// maps a unit - square point (x, y) to a unit - triangle point
+		auto lower_triangle = [&](float& x, float& y)
+		{
+			if (y > x)
+			{
+				x *= 0.5f;
+				y -= x;
+			}
+			else
+			{
+				y *= 0.5f;
+				x -= y;
+			}
+		};
+
+		auto upper_triangle = [&](float& x, float& y)
+		{
+			lower_triangle(x, y);
+			x = 1 - x;
+			y = 1 - x;
+		};
+
+		for (auto loop = 0; loop < size; ++loop)
+		{
+			const auto u = us[loop];
+			const auto v = vs[loop];
+			const auto hash = my_hash(int_x + u, int_y + v);
+
+			// lower triangle
+			{
+				auto randomX = OffsetX(hash);
+				auto randomY = OffsetY(hash);
+				lower_triangle(randomX, randomY);
+				const auto offsetX = randomX * jitter + 1.0f / 3.0f;
+				const auto offsetY = randomY * jitter + 1.0f / 3.0f;
+				const auto sample = origin + glm::vec2(u + offsetX, v + offsetY);
+				const auto global = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
+				const auto tmp = glm::dot(source - global, source - global);
+				if (sq_dist > tmp)
+				{
+					sq_dist = tmp;
+					cell_id = hash;
+				}
+			}
+
+			// upper triangle
+			{
+				auto randomX = OffsetX(hash);
+				auto randomY = OffsetY(hash);
+				upper_triangle(randomX, randomY);
+				const auto offsetZ = randomX * jitter + 2.0f / 3.0f;
+				const auto offsetT = randomY * jitter + 2.0f / 3.0f;
+				const auto sample = origin + glm::vec2(u + offsetZ, v + offsetT);
+				const auto global = glm::vec2(glm::dot(glm::vec2(), sample), glm::dot(glm::vec2(), sample));
+				const auto tmp = glm::dot(source - global, source - global);
+				if (sq_dist > tmp)
+				{
+					sq_dist = tmp;
+					cell_id = hash;
+				}
+			}
+		}
+
+		return std::make_pair(cell_id, sq_dist);
+	}
+
+	// TODO: optimized honeycomb implementation
 
 	// naive implementation
 	static std::pair<int, float> Evaluate3DRef(const glm::vec3& source, const int32_t (*my_hash)(const int32_t, const int32_t, const int32_t), const float jitter = 1.0f)
