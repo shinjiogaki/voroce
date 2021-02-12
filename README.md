@@ -24,13 +24,15 @@ Table 1: The number of cells to traverse
 |   2D / rectangle |       5^2 - 2^2 =  21 |                       13 |                         4 |
 |   3D             |       5^3 - 2^3 = 117 |                       39 |                        20 |
 |   4D             |       5^4 - 2^4 = 609 |                      195 |                       85? |
-|   2D / honeycomb |       3^2       =   9 |              coming soon |               coming soon |
+|   2D /  triangle |       3^2       =   9 |              coming soon |               coming soon |
 
 ## Features
 
 * [x] sample point jittering
 * [x] optimized code path for small jitter values
-* [x] honeycomb (2D)
+* [x] triangle (2D)
+* [ ] optimized triangle (2D)
+* [ ] honeycomb (2D)
 * [ ] optimized honeycomb (2D)
 * [x] cache (2D) (brings nearly 2x speedup for primary rays)
 * [ ] cache (3D)
