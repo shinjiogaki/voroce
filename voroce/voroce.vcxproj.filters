@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClCompile Include="..\test\main.cpp" />
     <ClCompile Include="..\src\voroce.cpp" />
+    <ClCompile Include="..\src\tables.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\voroce.h" />
