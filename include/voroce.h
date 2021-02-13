@@ -2,7 +2,6 @@
 // copyright (c) shinji ogaki
 
 #include "glm/glm.hpp"
-#include <array>
 
 namespace voroce
 {

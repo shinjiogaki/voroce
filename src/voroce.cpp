@@ -1,5 +1,6 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
+#include <array>
 
 #include "../include/voroce.h"
 
