@@ -6,7 +6,7 @@
 using namespace voroce;
 
 // naive implementation
-std::pair<int32_t, float> Voronoi::Evaluate2DRef(const glm::vec2& source, const int32_t (*my_hash)(const glm::ivec2 &p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate2DRef(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2 &p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -39,7 +39,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DRef(const glm::vec2& source, const 
 }
 
 // quadrant optimization
-std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, const int32_t (*my_hash)(const glm::ivec2& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -115,7 +115,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, const 
 }
 
 // quadrant optimization with cache
-std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, const int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -251,7 +251,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, cons
 }
 
 // naive triangle implementation
-std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, const int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -328,7 +328,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, const 
 }
 
 // naive implementation
-std::pair<int32_t, float> Voronoi::Evaluate3DRef(const glm::vec3& source, const int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate3DRef(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -360,7 +360,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DRef(const glm::vec3& source, const 
 }
 
 // octant optimization
-std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, const int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -452,7 +452,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, const 
 }
 
 // octant optimization with cache
-std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, const int32_t(*my_hash)(const glm::ivec3& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -590,7 +590,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, cons
 }
 
 // naive implementation
-std::pair<int32_t, float> Voronoi::Evaluate4DRef(const glm::vec4& source, const int32_t (*my_hash)(const glm::ivec4& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate4DRef(const glm::vec4& source, int32_t (*my_hash)(const glm::ivec4& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -630,7 +630,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DRef(const glm::vec4& source, const 
 }
 
 // hextant optimization
-std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, const int32_t(*my_hash)(const glm::ivec4& p), const float jitter)
+std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 

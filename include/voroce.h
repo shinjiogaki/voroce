@@ -17,17 +17,17 @@ namespace voroce
 		static const auto PrimeT = 23469181;
 		static const auto LCG = 48271;
 
-		static const int32_t Hash2DLowQuality(const glm::ivec2& p)
+		static int32_t Hash2DLowQuality(const glm::ivec2& p)
 		{
 			return ((p.x * PrimeU) ^ (p.y * PrimeV)) * LCG;
 		}
 
-		static const int32_t Hash3DLowQuality(const glm::ivec3& p)
+		static int32_t Hash3DLowQuality(const glm::ivec3& p)
 		{
 			return ((p.x * PrimeU) ^ (p.y * PrimeV) ^ (p.z * PrimeW)) * LCG;
 		}
 
-		static const int32_t Hash4DLowQuality(const glm::ivec4& p)
+		static int32_t Hash4DLowQuality(const glm::ivec4& p)
 		{
 			return ((p.x * PrimeU) ^ (p.y * PrimeV) ^ (p.z * PrimeW) ^ (p.w * PrimeT)) * LCG;
 		}
@@ -101,17 +101,17 @@ namespace voroce
 		int32_t   cache3d_cell_ids[39];
 		glm::vec3 cache3d_samples [39];
 
-		static std::pair<int32_t, float> Evaluate2DRef(const glm::vec2& source, const int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-		static std::pair<int32_t, float> Evaluate2DOpt(const glm::vec2& source, const int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-		static std::pair<int32_t, float> Evaluate2DTri(const glm::vec2& source, const int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate2DRef(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate2DOpt(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
 
-		static std::pair<int32_t, float> Evaluate3DRef(const glm::vec3& source, const int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
-		static std::pair<int32_t, float> Evaluate3DOpt(const glm::vec3& source, const int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate3DRef(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate3DOpt(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
 
-		static std::pair<int32_t, float> Evaluate4DRef(const glm::vec4& source, const int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
-		static std::pair<int32_t, float> Evaluate4DOpt(const glm::vec4& source, const int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate4DRef(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
+		static std::pair<int32_t, float> Evaluate4DOpt(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
 
-		std::pair<int32_t, float> Evaluate2DCache(const glm::vec2& source, const int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-		std::pair<int32_t, float> Evaluate3DCache(const glm::vec3& source, const int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
+		std::pair<int32_t, float> Evaluate2DCache(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+		std::pair<int32_t, float> Evaluate3DCache(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
 	};
 }
