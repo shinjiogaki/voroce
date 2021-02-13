@@ -35,7 +35,7 @@ Table 1: The number of cells to traverse
 * [ ] honeycomb (2D)
 * [ ] optimized honeycomb (2D)
 * [x] cache (2D) (brings nearly 2x speedup for primary rays)
-* [ ] cache (3D)
+* [x] cache (3D) (brings nearly 2x speedup for primary rays)
 * [ ] cache (4D)
 
 I have many ideas. Stay tuned!
