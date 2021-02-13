@@ -121,13 +121,13 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 
 	const auto origin    = glm::vec2(std::floor(source.x), std::floor(source.y));
 	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
+	const auto self      = my_hash(quantized);
 
 	// early termination
 	if (0.0f == jitter)
 	{
-		const auto hash   = my_hash(quantized);
 		const auto sample = origin + 0.5f;
-		return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		return std::make_pair(self, glm::dot(source - sample, source - sample));
 	}
 
 	// quadrant selection
@@ -141,20 +141,67 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 	// fast enough
 	if (0.5f >= jitter)
 	{
-		for (auto loop = 0; loop < 4; ++loop)
+		if (cache2d_cell_id == self && cache2d_quadrant == quadrant)
 		{
-			const auto shift  = glm::ivec2(us2[quadrant][loop], vs2[quadrant][loop]);
-			const auto hash   = my_hash(quantized + shift);
-			const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
-			const auto sample = origin + offset + glm::vec2(shift);
-			const auto tmp    = glm::dot(source - sample, source - sample);
-			if (sq_dist > tmp)
+			// cache hit
+			auto counter = 0;
+			for (auto loop = 0; loop < 4; ++loop)
 			{
-				sq_dist = tmp;
-				cell_id = hash;
+				if (counter < cache2d_counter)
+				{
+					// reuse cache
+					const auto sample = cache2d_samples[counter];
+					const auto tmp    = glm::dot(source - sample, source - sample);
+					if (sq_dist > tmp)
+					{
+						sq_dist = tmp;
+						cell_id = cache2d_cell_ids[counter];
+					}
+				}
+				else
+				{
+					// fall back
+					const auto shift  = glm::ivec2(us2[quadrant][loop], vs2[quadrant][loop]);
+					const auto hash   = my_hash(quantized + shift);
+					const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
+					const auto sample = origin + offset + glm::vec2(shift);
+					const auto tmp    = glm::dot(source - sample, source - sample);
+					if (sq_dist > tmp)
+					{
+						sq_dist = tmp;
+						cell_id = hash;
+					}
+				}
+				++counter;
 			}
 		}
+		else
+		{
+			// cache miss
+			cache2d_cell_id  = self;
+			cache2d_quadrant = quadrant;
+			cache2d_counter  = 0;
 
+			for (auto loop = 0; loop < 4; ++loop)
+			{
+				const auto shift  = glm::ivec2(us2[quadrant][loop], vs2[quadrant][loop]);
+				const auto hash   = my_hash(quantized + shift);
+				const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
+				const auto sample = origin + offset + glm::vec2(shift);
+				const auto tmp    = glm::dot(source - sample, source - sample);
+
+				// update cache
+				cache2d_samples [cache2d_counter] = sample;
+				cache2d_cell_ids[cache2d_counter] = hash;
+				++cache2d_counter;
+
+				if (sq_dist > tmp)
+				{
+					sq_dist = tmp;
+					cell_id = hash;
+				}
+			}
+		}
 		return std::make_pair(cell_id, sq_dist);
 	}
 
@@ -164,7 +211,6 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 	const std::array<int32_t, 5> slices = { 0, 4, 8, 9, 13 };
 	const std::array<int32_t, 4> ranges = { 0, 1, 2, 4 };
 
-	const auto self = my_hash(quantized);
 	if (cache2d_cell_id == self && cache2d_quadrant == quadrant)
 	{
 		// cache hit
@@ -458,13 +504,13 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 
 	const auto origin    = glm::vec3(std::floor(source.x), std::floor(source.y), std::floor(source.z));
 	const auto quantized = glm::ivec3(int32_t(origin.x), int32_t(origin.y), int32_t(origin.z));
+	const auto self      = my_hash(quantized);
 
 	// early termination
 	if (0.0f == jitter)
 	{
-		const auto hash   = my_hash(quantized);
 		const auto sample = origin + 0.5f;
-		return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		return std::make_pair(self, glm::dot(source - sample, source - sample));
 	}
 
 	// octant selection
@@ -484,27 +530,86 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 		const std::array<int32_t, 7> ranges = { 0, 1, 2, 3, 9, 10, 11 };
 		const std::array<int32_t, 8> slices = { 0, 1, 4, 7, 8, 11, 17, 20 };
 
-		for (auto dist = 0; dist < 7; ++dist)
+		if (cache3d_cell_id == self && cache3d_octant == octant)
 		{
-			if (ranges[dist] < sq_dist * 16)
+			// cache hit
+			auto counter = 0;
+			for (auto dist = 0; dist < 7; ++dist)
 			{
-				for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
+				if (ranges[dist] < sq_dist * 16)
 				{
-					const auto shift  = glm::ivec3(us3[octant][loop], vs3[octant][loop], ws3[octant][loop]);
-					const auto hash   = my_hash(quantized + shift);
-					const auto offset = glm::vec3(OffsetX(hash, jitter), OffsetY(hash, jitter), OffsetZ(hash, jitter));
-					const auto sample = origin + offset + glm::vec3(shift);
-					const auto tmp    = glm::dot(source - sample, source - sample);
-					if (sq_dist > tmp)
+					for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
 					{
-						sq_dist = tmp;
-						cell_id = hash;
+						if (counter < cache3d_counter)
+						{
+							// reuse cache
+							const auto sample = cache3d_samples[counter];
+							const auto tmp    = glm::dot(source - sample, source - sample);
+							if (sq_dist > tmp)
+							{
+								sq_dist = tmp;
+								cell_id = cache3d_cell_ids[counter];
+							}
+						}
+						else
+						{
+							// fall back
+							const auto shift  = glm::ivec3(us3[octant][loop], vs3[octant][loop], ws3[octant][loop]);
+							const auto hash   = my_hash(quantized + shift);
+							const auto offset = glm::vec3(OffsetX(hash, jitter), OffsetY(hash, jitter), OffsetZ(hash, jitter));
+							const auto sample = origin + offset + glm::vec3(shift);
+							const auto tmp    = glm::dot(source - sample, source - sample);
+
+							if (sq_dist > tmp)
+							{
+								sq_dist = tmp;
+								cell_id = hash;
+							}
+						}
+						++counter;
 					}
 				}
+				else
+				{
+					break;
+				}
 			}
-			else
+		}
+		else
+		{
+			// cache miss
+			cache3d_cell_id = self;
+			cache3d_octant  = octant;
+			cache3d_counter = 0;
+
+			for (auto dist = 0; dist < 7; ++dist)
 			{
-				break;
+				if (ranges[dist] < sq_dist * 16)
+				{
+					for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
+					{
+						const auto shift  = glm::ivec3(us3[octant][loop], vs3[octant][loop], ws3[octant][loop]);
+						const auto hash   = my_hash(quantized + shift);
+						const auto offset = glm::vec3(OffsetX(hash, jitter), OffsetY(hash, jitter), OffsetZ(hash, jitter));
+						const auto sample = origin + offset + glm::vec3(shift);
+						const auto tmp    = glm::dot(source - sample, source - sample);
+
+						// update cache
+						cache3d_samples [cache3d_counter] = sample;
+						cache3d_cell_ids[cache3d_counter] = hash;
+						++cache3d_counter;
+
+						if (sq_dist > tmp)
+						{
+							sq_dist = tmp;
+							cell_id = hash;
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
 			}
 		}
 		return std::make_pair(cell_id, sq_dist);
@@ -516,7 +621,6 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 	const std::array<int32_t, 5> ranges = { 0,  1,  2,  3,  4 };
 	const std::array<int32_t, 6> slices = { 0,  8, 20, 26, 27, 39 };
 
-	const auto self = my_hash(quantized);
 	if (cache3d_cell_id == self && cache3d_octant == octant)
 	{
 		// cache hit
