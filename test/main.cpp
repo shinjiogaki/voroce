@@ -12,6 +12,8 @@
 
 int main()
 {
+	using voroce::Voronoi;
+
 	const auto golden_ratio = 1.61803398875;
 	const auto N = 1000000;
 	const auto T = 10000000;
@@ -25,7 +27,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voroce::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality, 0.5).first;
+			volatile auto v = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -38,7 +40,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voroce::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality, 0.5f).first;
+			volatile auto v = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -51,7 +53,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voroce::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality).first;
+			volatile auto v = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -64,7 +66,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voroce::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality).first;
+			volatile auto v = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -77,8 +79,8 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			const auto ref = Voroce::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality, 0.5f).first;
-			const auto opt = Voroce::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality, 0.5f).first;
+			const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f).first;
+			const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f).first;
 			if (ref != opt)
 			{
 				std::cout << "NG: (" << x << "," << y << ") ref:" << ref << " opt:" << opt << std::endl;
@@ -101,8 +103,8 @@ int main()
 			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double>& tuple)
 				{
 					const auto [x, y] = tuple;
-					const auto ref = Voroce::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality, 0.5f);
-					const auto opt = Voroce::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality, 0.5f);
+					const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
+					const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
 					if (ref.second != opt.second)
 					{
 						std::cout << "2d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
@@ -126,8 +128,8 @@ int main()
 			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double>& tuple)
 				{
 					const auto [x, y] = tuple;
-					const auto ref = Voroce::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality);
-					const auto opt = Voroce::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voroce::Hash2DLowQuality);
+					const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality);
+					const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality);
 					if (ref.second != opt.second)
 					{
 						std::cout << "2d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
@@ -146,7 +148,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voroce::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality, 0.5f).first;
+			volatile auto v = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -160,7 +162,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voroce::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality, 0.5f).first;
+			volatile auto v = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -174,7 +176,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voroce::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality).first;
+			volatile auto v = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -188,7 +190,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voroce::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality).first;
+			volatile auto v = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -210,8 +212,8 @@ int main()
 			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double, double>& tuple)
 				{
 					const auto [x, y, z] = tuple;
-					const auto ref = Voroce::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality, 0.5f);
-					const auto opt = Voroce::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality, 0.5f);
+					const auto ref = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f);
+					const auto opt = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f);
 					if (ref.second != opt.second)
 					{
 						std::cout << "3d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
@@ -235,8 +237,8 @@ int main()
 			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double, double>& tuple)
 				{
 					const auto [x, y, z] = tuple;
-					const auto ref = Voroce::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality);
-					const auto opt = Voroce::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voroce::Hash3DLowQuality);
+					const auto ref = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality);
+					const auto opt = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality);
 					if (ref.second != opt.second)
 					{
 						std::cout << "3d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
@@ -256,7 +258,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voroce::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality, 0.5f).first;
+			volatile auto v = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -271,7 +273,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voroce::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality, 0.5f).first;
+			volatile auto v = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -286,7 +288,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voroce::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality).first;
+			volatile auto v = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -301,7 +303,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voroce::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality).first;
+			volatile auto v = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality).first;
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -323,8 +325,8 @@ int main()
 			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double, double, double>& tuple)
 				{
 					const auto [x, y, z, t] = tuple;
-					const auto ref = Voroce::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality, 0.5f);
-					const auto opt = Voroce::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality, 0.5f);
+					const auto ref = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f);
+					const auto opt = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f);
 					if (ref.second != opt.second)
 					{
 						std::cout << "4d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
@@ -348,8 +350,8 @@ int main()
 			std::for_each(std::execution::par, RND.begin(), RND.end(), [&](std::tuple<double, double, double, double>& tuple)
 				{
 					const auto [x, y, z, t] = tuple;
-					const auto ref = Voroce::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality);
-					const auto opt = Voroce::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voroce::Hash4DLowQuality);
+					const auto ref = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality);
+					const auto opt = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality);
 					if (ref.second != opt.second)
 					{
 						std::cout << "4d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
