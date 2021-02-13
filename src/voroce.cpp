@@ -479,20 +479,34 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 	// fast enough
 	if (0.5f >= jitter)
 	{
-		for (auto loop = 0; loop < 4; ++loop)
+		// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19
+		// 0, 1, 1, 1, 2, 2, 2, 3, 9, 9, 9,10,10,10,10,10,10,11,11,11
+		const std::array<int32_t, 7> ranges = { 0, 1, 2, 3, 9, 10, 11 };
+		const std::array<int32_t, 8> slices = { 0, 1, 4, 7, 8, 11, 17, 20 };
+
+		for (auto dist = 0; dist < 7; ++dist)
 		{
-			const auto shift  = glm::ivec3(us3[octant][loop], vs3[octant][loop], ws3[octant][loop]);
-			const auto hash   = my_hash(quantized + shift);
-			const auto offset = glm::vec3(OffsetX(hash, jitter), OffsetY(hash, jitter), OffsetZ(hash, jitter));
-			const auto sample = origin + offset + glm::vec3(shift);
-			const auto tmp    = glm::dot(source - sample, source - sample);
-			if (sq_dist > tmp)
+			if (ranges[dist] < sq_dist * 16)
 			{
-				sq_dist = tmp;
-				cell_id = hash;
+				for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
+				{
+					const auto shift  = glm::ivec3(us3[octant][loop], vs3[octant][loop], ws3[octant][loop]);
+					const auto hash   = my_hash(quantized + shift);
+					const auto offset = glm::vec3(OffsetX(hash, jitter), OffsetY(hash, jitter), OffsetZ(hash, jitter));
+					const auto sample = origin + offset + glm::vec3(shift);
+					const auto tmp    = glm::dot(source - sample, source - sample);
+					if (sq_dist > tmp)
+					{
+						sq_dist = tmp;
+						cell_id = hash;
+					}
+				}
+			}
+			else
+			{
+				break;
 			}
 		}
-
 		return std::make_pair(cell_id, sq_dist);
 	}
 
