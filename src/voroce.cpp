@@ -511,17 +511,17 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 	}
 
 	// cell id and possible minimum squared distance
-	// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12
-	// 0, 0, 0, 0, 1, 1, 1, 1, 2, 4, 4, 4, 4
-	const std::array<int32_t, 5> slices = { 0, 4, 8, 9, 13 };
-	const std::array<int32_t, 4> ranges = { 0, 1, 2, 4 };
+	// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38
+	// 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
+	const std::array<int32_t, 5> ranges = { 0,  1,  2,  3,  4 };
+	const std::array<int32_t, 6> slices = { 0,  8, 20, 26, 27, 39 };
 
 	const auto self = my_hash(quantized);
 	if (cache3d_cell_id == self && cache3d_octant == octant)
 	{
 		// cache hit
 		auto counter = 0;
-		for (auto dist = 0; dist < 4; ++dist)
+		for (auto dist = 0; dist < 5; ++dist)
 		{
 			if (ranges[dist] < sq_dist * 4)
 			{
@@ -569,7 +569,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 		cache3d_octant  = octant;
 		cache3d_counter = 0;
 
-		for (auto dist = 0; dist < 4; ++dist)
+		for (auto dist = 0; dist < 5; ++dist)
 		{
 			if (ranges[dist] < sq_dist * 4)
 			{
