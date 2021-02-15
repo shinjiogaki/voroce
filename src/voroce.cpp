@@ -311,6 +311,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
 
+	// TODO: fix this not enough
 	// 1 (self) + 8 (neighbours)
 	const auto size = 9;
 	const std::array<int32_t, size> us = { 0, 0,-1, 1, 0,-1, 1,-1, 1 };
