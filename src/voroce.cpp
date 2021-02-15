@@ -332,8 +332,19 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 		}
 	};
 
+	const auto tmp   = local - origin;
+	const auto which = (1.0f > tmp.x + tmp.y) ? 0 : 1;
 	for (auto loop = 0; loop < size; ++loop)
 	{
+		if (which == 0 && 8 == loop)
+		{
+			continue;
+		}
+		if (which == 1 && 5 == loop)
+		{
+			continue;
+		}
+
 		const auto shift = glm::ivec2(us[loop], vs[loop]);
 
 		// lower triangle
@@ -355,7 +366,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 
 		// upper triangle
 		{
-			const auto hash = my_hash(quantized + shift + 1);
+			const auto hash = my_hash(quantized + shift + PrimeW);
 			auto randomX = OffsetX(hash);
 			auto randomY = OffsetY(hash);
 			triangle(randomX, randomY);
