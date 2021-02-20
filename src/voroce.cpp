@@ -311,11 +311,23 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
 
-	// TODO: fix this not enough
-	// 1 (self) + 8 (neighbours)
-	const auto size = 9;
-	const std::array<int32_t, size> us = { 0, 0,-1, 1, 0,-1, 1,-1, 1 };
-	const std::array<int32_t, size> vs = { 0,-1, 0, 0, 1,-1,-1, 1, 1 };
+	// 1 (self) + 14 (neighbours)
+	const auto size = 15;
+	const std::array<int32_t, size> us[2] =
+	{
+		{ 0, 0,-1, 1, 0,-1, 1,-1, 1, -1,-2,-2, 2, 1, 0 },
+		{ 0, 0,-1, 1, 0,-1, 1,-1, 1,  0,-1,-2, 2, 2, 1 },
+	};
+	const std::array<int32_t, size> vs[2] =
+	{
+		{ 0,-1, 0, 0, 1,-1,-1, 1, 1, 2, 1, 0,-1,-2,-2 },
+		{ 0,-1, 0, 0, 1,-1,-1, 1, 1, 2, 2, 1, 0,-1,-2 },
+	};
+	const std::array<int32_t, size> flags[2] =
+	{
+		{ 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 3, 2, 1, 3, 2 },
+		{ 3, 3, 3, 3, 3, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2 },
+	};
 
 	// "A Low-Distortion Map Between Triangle and Square" by Eric Heitz
 	// maps a unit - square point (x, y) to a unit - triangle point
@@ -337,10 +349,10 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 	const auto which = (1.0f > tmp.x + tmp.y) ? 0 : 1;
 	for (auto loop = 0; loop < size; ++loop)
 	{
-		const auto shift = glm::ivec2(us[loop], vs[loop]);
+		const auto shift = glm::ivec2(us[which][loop], vs[which][loop]);
 
 		// lower triangle
-		if (!(1 == which && 5 == loop))
+		if (1 & flags[which][loop])
 		{
 			const auto hash = my_hash(quantized + shift + 0);
 			auto randomX = OffsetX(hash);
@@ -358,7 +370,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 		}
 
 		// upper triangle
-		if (!(0 == which && 8 == loop))
+		if (2 & flags[which][loop])
 		{
 			const auto hash = my_hash(quantized + shift + PrimeW);
 			auto randomX = OffsetX(hash);
