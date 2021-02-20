@@ -24,7 +24,7 @@ Table 1: The number of cells to traverse
 |   2D / rectangle |       5^2 - 2^2 =  21 |                       13 |                         4 |
 |   3D             |       5^3 - 2^3 = 117 |                       39 |                        20 |
 |   4D             |       5^4 - 2^4 = 609 |                      195 |                       85? |
-|   2D /  triangle |       3^2       =   9 |              coming soon |               coming soon |
+|   2D /  triangle |   25 triangular cells |              coming soon |               coming soon |
 
 ## Features
 
