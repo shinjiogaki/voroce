@@ -1,13 +1,14 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
 #include <array>
+#include <tuple>
 
 #include "../include/voroce.h"
 
 using namespace voroce;
 
 // naive implementation
-std::pair<int32_t, float> Voronoi::Evaluate2DRef(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2 &p), const float jitter)
+std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DRef(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2 &p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -16,6 +17,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DRef(const glm::vec2& source, int32_
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec2 point;
 
 	// 1 (self) + 20 (neighbours)
 	const auto size = 21;
@@ -33,14 +35,15 @@ std::pair<int32_t, float> Voronoi::Evaluate2DRef(const glm::vec2& source, int32_
 		{
 			sq_dist = tmp;
 			cell_id = hash;
+			point   = sample;
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // quadrant optimization
-std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter)
+std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -52,7 +55,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_
 	{
 		const auto hash   = my_hash(quantized);
 		const auto sample = origin + 0.5f;
-		return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		return std::make_tuple(hash, glm::dot(source - sample, source - sample), sample);
 	}
 
 	// quadrant selection
@@ -62,6 +65,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec2 point;
 
 	if (0.5f >= jitter)
 	{
@@ -76,10 +80,11 @@ std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_
 			{
 				sq_dist = tmp;
 				cell_id = hash;
+				point   = sample;
 			}
 		}
 
-		return std::make_pair(cell_id, sq_dist);
+		return std::make_tuple(cell_id, sq_dist, point);
 	}
 
 	// cell id and possible minimum squared distance
@@ -103,6 +108,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_
 				{
 					sq_dist = tmp;
 					cell_id = hash;
+					point   = sample;
 				}
 			}
 		}
@@ -112,11 +118,11 @@ std::pair<int32_t, float> Voronoi::Evaluate2DOpt(const glm::vec2& source, int32_
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // quadrant optimization with cache
-std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
+std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DCache(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -128,7 +134,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 	if (0.0f == jitter)
 	{
 		const auto sample = origin + 0.5f;
-		return std::make_pair(self, glm::dot(source - sample, source - sample));
+		return std::make_tuple(self, glm::dot(source - sample, source - sample), sample);
 	}
 
 	// quadrant selection
@@ -138,6 +144,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec2 point;
 
 	// fast enough
 	if (0.5f >= jitter)
@@ -157,6 +164,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 					{
 						sq_dist = tmp;
 						cell_id = cache2d_cell_ids[counter];
+						point = sample;
 					}
 				}
 				else
@@ -171,6 +179,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
 					}
 				}
 				++counter;
@@ -200,10 +209,11 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 				{
 					sq_dist = tmp;
 					cell_id = hash;
+					point   = sample;
 				}
 			}
 		}
-		return std::make_pair(cell_id, sq_dist);
+		return std::make_tuple(cell_id, sq_dist, point);
 	}
 
 	// cell id and possible minimum squared distance
@@ -231,6 +241,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = cache2d_cell_ids[counter];
+							point   = sample;
 						}
 					}
 					else
@@ -245,6 +256,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = hash;
+							point   = sample;
 						}
 					}
 					++counter;
@@ -284,6 +296,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
 					}
 				}
 			}
@@ -294,11 +307,11 @@ std::pair<int32_t, float> Voronoi::Evaluate2DCache(const glm::vec2& source, int3
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // naive triangle implementation
-std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
+std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -310,6 +323,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec2 point;
 
 	// 1 (self) + 14 (neighbours)
 	const auto size = 15;
@@ -366,6 +380,7 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 			{
 				sq_dist = tmp;
 				cell_id = hash;
+				point   = sample;
 			}
 		}
 
@@ -384,15 +399,16 @@ std::pair<int32_t, float> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_
 			{
 				sq_dist = tmp;
 				cell_id = hash;
+				point   = sample;
 			}
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // naive implementation
-std::pair<int32_t, float> Voronoi::Evaluate3DRef(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
+std::tuple<int32_t, float, glm::vec3> Voronoi::Evaluate3DRef(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -406,6 +422,8 @@ std::pair<int32_t, float> Voronoi::Evaluate3DRef(const glm::vec3& source, int32_
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec3 point;
+
 	for (auto loop = 0; loop < size; ++loop)
 	{
 		const auto shift  = glm::ivec3(us[loop], vs[loop], ws[loop]);
@@ -417,14 +435,15 @@ std::pair<int32_t, float> Voronoi::Evaluate3DRef(const glm::vec3& source, int32_
 		{
 			sq_dist = tmp;
 			cell_id = hash;
+			point   = sample;
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // octant optimization
-std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
+std::tuple<int32_t, float, glm::vec3> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -436,7 +455,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_
 	{
 		const auto hash   = my_hash(quantized);
 		const auto sample = origin + 0.5f;
-		return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		return std::make_tuple(hash, glm::dot(source - sample, source - sample), sample);
 	}
 
 	// octant selection
@@ -447,6 +466,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec3 point;
 
 	if (0.5f >= jitter)
 	{
@@ -470,6 +490,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
 					}
 				}
 			}
@@ -479,7 +500,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_
 			}
 		}
 
-		return std::make_pair(cell_id, sq_dist);
+		return std::make_tuple(cell_id, sq_dist, point);
 	}
 
 	// cell id and possible minimum squared distance
@@ -503,6 +524,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_
 				{
 					sq_dist = tmp;
 					cell_id = hash;
+					point   = sample;
 				}
 			}
 		}
@@ -512,11 +534,11 @@ std::pair<int32_t, float> Voronoi::Evaluate3DOpt(const glm::vec3& source, int32_
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // octant optimization with cache
-std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter)
+std::tuple<int32_t, float, glm::vec3> Voronoi::Evaluate3DCache(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -528,7 +550,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 	if (0.0f == jitter)
 	{
 		const auto sample = origin + 0.5f;
-		return std::make_pair(self, glm::dot(source - sample, source - sample));
+		return std::make_tuple(self, glm::dot(source - sample, source - sample), sample);
 	}
 
 	// octant selection
@@ -539,6 +561,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec3 point;
 
 	// fast enough
 	if (0.5f >= jitter)
@@ -567,6 +590,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 							{
 								sq_dist = tmp;
 								cell_id = cache3d_cell_ids[counter];
+								point   = sample;
 							}
 						}
 						else
@@ -582,6 +606,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 							{
 								sq_dist = tmp;
 								cell_id = hash;
+								point   = sample;
 							}
 						}
 						++counter;
@@ -621,6 +646,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = hash;
+							point   = sample;
 						}
 					}
 				}
@@ -631,7 +657,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 			}
 		}
 
-		return std::make_pair(cell_id, sq_dist);
+		return std::make_tuple(cell_id, sq_dist, point);
 	}
 
 	// cell id and possible minimum squared distance
@@ -659,6 +685,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = cache3d_cell_ids[counter];
+							point   = sample;
 						}
 					}
 					else
@@ -674,6 +701,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = hash;
+							point   = sample;
 						}
 					}
 					++counter;
@@ -713,6 +741,7 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
 					}
 				}
 			}
@@ -723,11 +752,11 @@ std::pair<int32_t, float> Voronoi::Evaluate3DCache(const glm::vec3& source, int3
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // naive implementation
-std::pair<int32_t, float> Voronoi::Evaluate4DRef(const glm::vec4& source, int32_t (*my_hash)(const glm::ivec4& p), const float jitter)
+std::tuple<int32_t, float, glm::vec4> Voronoi::Evaluate4DRef(const glm::vec4& source, int32_t (*my_hash)(const glm::ivec4& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -736,6 +765,8 @@ std::pair<int32_t, float> Voronoi::Evaluate4DRef(const glm::vec4& source, int32_
 
 	auto sq_dist = std::numeric_limits<float>::max();
 	auto cell_id = 0;
+	glm::vec4 point;
+
 	for (auto t = -2; t <= 2; ++t)
 	{
 		for (auto w = -2; w <= 2; ++w)
@@ -757,32 +788,31 @@ std::pair<int32_t, float> Voronoi::Evaluate4DRef(const glm::vec4& source, int32_
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
+
 					}
 				}
 			}
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // hextant optimization
-std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter)
+std::tuple<int32_t, float, glm::vec4> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
 	const auto origin    = glm::vec4(std::floor(source.x), std::floor(source.y), std::floor(source.z), std::floor(source.w));
 	const auto quantized = glm::ivec4(int32_t(origin.x), int32_t(origin.y), int32_t(origin.z), int32_t(origin.w));
 
-	auto sq_dist = std::numeric_limits<float>::max();
-	auto cell_id = 0;
-
 	// early termination
 	if (0.0f == jitter)
 	{
 		const auto hash   = my_hash(quantized);
 		const auto sample = origin + 0.5f;
-		return std::make_pair(hash, glm::dot(source - sample, source - sample));
+		return std::make_tuple(hash, glm::dot(source - sample, source - sample), sample);
 	}
 
 	// hextant selection
@@ -791,6 +821,10 @@ std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_
 	if (0.5f > source.y - origin.y) { hextant += 2; }
 	if (0.5f > source.z - origin.z) { hextant += 4; }
 	if (0.5f > source.t - origin.t) { hextant += 8; }
+
+	auto sq_dist = std::numeric_limits<float>::max();
+	auto cell_id = 0;
+	glm::vec4 point;
 
 	if (0.5f >= jitter)
 	{
@@ -816,6 +850,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
 					}
 				}
 			}
@@ -825,7 +860,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_
 			}
 		}
 
-		return std::make_pair(cell_id, sq_dist);
+		return std::make_tuple(cell_id, sq_dist, point);
 	}
 
 	// cell id and possible minimum squared distance
@@ -849,6 +884,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_
 				{
 					sq_dist = tmp;
 					cell_id = hash;
+					point   = sample;
 				}
 			}
 		}
@@ -858,11 +894,11 @@ std::pair<int32_t, float> Voronoi::Evaluate4DOpt(const glm::vec4& source, int32_
 		}
 	}
 
-	return std::make_pair(cell_id, sq_dist);
+	return std::make_tuple(cell_id, sq_dist, point);
 }
 
 // hextant optimization with cache
-std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter)
+std::tuple<int32_t, float, glm::vec4> Voronoi::Evaluate4DCache(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter)
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
@@ -870,14 +906,11 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 	const auto quantized = glm::ivec4(int32_t(origin.x), int32_t(origin.y), int32_t(origin.z), int32_t(origin.w));
 	const auto self      = my_hash(quantized);
 
-	auto sq_dist = std::numeric_limits<float>::max();
-	auto cell_id = 0;
-
 	// early termination
 	if (0.0f == jitter)
 	{
 		const auto sample = origin + 0.5f;
-		return std::make_pair(self, glm::dot(source - sample, source - sample));
+		return std::make_tuple(self, glm::dot(source - sample, source - sample), sample);
 	}
 
 	// hextant selection
@@ -886,6 +919,10 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 	if (0.5f > source.y - origin.y) { hextant += 2; }
 	if (0.5f > source.z - origin.z) { hextant += 4; }
 	if (0.5f > source.t - origin.t) { hextant += 8; }
+
+	auto sq_dist = std::numeric_limits<float>::max();
+	auto cell_id = 0;
+	glm::vec4 point;
 
 	if (0.5f >= jitter)
 	{
@@ -914,6 +951,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 							{
 								sq_dist = tmp;
 								cell_id = cache4d_cell_ids[counter];
+								point   = sample;
 							}
 						}
 						else
@@ -929,6 +967,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 							{
 								sq_dist = tmp;
 								cell_id = hash;
+								point   = sample;
 							}
 						}
 						++counter;
@@ -968,6 +1007,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = hash;
+							point   = sample;
 						}
 					}
 				}
@@ -978,7 +1018,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 			}
 		}
 
-		return std::make_pair(cell_id, sq_dist);
+		return std::make_tuple(cell_id, sq_dist, point);
 	}
 
 	// cell id and possible minimum squared distance
@@ -1006,6 +1046,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = cache4d_cell_ids[counter];
+							point   = sample;
 						}
 					}
 					else
@@ -1021,6 +1062,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 						{
 							sq_dist = tmp;
 							cell_id = hash;
+							point   = sample;
 						}
 					}
 					++counter;
@@ -1060,6 +1102,7 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 					{
 						sq_dist = tmp;
 						cell_id = hash;
+						point   = sample;
 					}
 				}
 			}
@@ -1069,5 +1112,6 @@ std::pair<int32_t, float> Voronoi::Evaluate4DCache(const glm::vec4& source, int3
 			}
 		}
 	}
-	return std::make_pair(cell_id, sq_dist);
+
+	return std::make_tuple(cell_id, sq_dist, point);
 }

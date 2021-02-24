@@ -27,7 +27,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5).first;
+			const auto v = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -40,7 +40,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f).first;
+			const auto v = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -53,7 +53,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality).first;
+			const auto v = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -66,7 +66,7 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			volatile auto v = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality).first;
+			const auto v = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -79,11 +79,11 @@ int main()
 		{
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
-			const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f).first;
-			const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f).first;
+			const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
+			const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
 			if (ref != opt)
 			{
-				std::cout << "NG: (" << x << "," << y << ") ref:" << ref << " opt:" << opt << std::endl;
+				std::cout << "NG: (" << x << "," << y << ") ref:" << get<0>(ref) << " opt:" << get<0>(opt) << std::endl;
 			}
 		}
 	}
@@ -105,9 +105,9 @@ int main()
 					const auto [x, y] = tuple;
 					const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
 					const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality, 0.5f);
-					if (ref.second != opt.second)
+					if (get<1>(ref) != get<1>(opt))
 					{
-						std::cout << "2d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
+						std::cout << "2d: ref:" << get<0>(ref) << " opt:" << get<0>(opt) << " ref:" << std::setprecision(16) << get<1>(ref) << " opt:" << get<1>(opt) << std::endl;
 					}
 				});
 		}
@@ -130,9 +130,9 @@ int main()
 					const auto [x, y] = tuple;
 					const auto ref = Voronoi::Evaluate2DRef(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality);
 					const auto opt = Voronoi::Evaluate2DOpt(glm::vec2(x * 2048 - 1024, y * 2048 - 1024), Voronoi::Hash2DLowQuality);
-					if (ref.second != opt.second)
+					if (get<1>(ref) != get<1>(opt))
 					{
-						std::cout << "2d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
+						std::cout << "2d: ref:" << get<0>(ref) << " opt:" << get<0>(opt) << " ref:" << std::setprecision(16) << get<1>(ref) << " opt:" << get<1>(opt) << std::endl;
 					}
 				});
 		}
@@ -148,7 +148,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f).first;
+			const auto v = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -162,10 +162,10 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f).first;
+			const auto v = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f);
 		}
 		const auto end = std::chrono::system_clock::now();
-		const auto  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		std::cout << "3d opt half: " << elapsed << std::endl;
 	}
 
@@ -176,7 +176,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality).first;
+			const auto v = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -190,7 +190,7 @@ int main()
 			const auto x = (i + 0.5) / N;
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
-			volatile auto v = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality).first;
+			const auto v = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -214,9 +214,9 @@ int main()
 					const auto [x, y, z] = tuple;
 					const auto ref = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f);
 					const auto opt = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality, 0.5f);
-					if (ref.second != opt.second)
+					if (get<1>(ref) != get<1>(opt))
 					{
-						std::cout << "3d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
+						std::cout << "3d: ref:" << get<0>(ref) << " opt:" << get<0>(opt) << " ref:" << std::setprecision(16) << get<1>(ref) << " opt:" << get<1>(opt) << std::endl;
 					}
 				});
 		}
@@ -239,9 +239,9 @@ int main()
 					const auto [x, y, z] = tuple;
 					const auto ref = Voronoi::Evaluate3DRef(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality);
 					const auto opt = Voronoi::Evaluate3DOpt(glm::vec3(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024), Voronoi::Hash3DLowQuality);
-					if (ref.second != opt.second)
+					if (get<1>(ref) != get<1>(opt))
 					{
-						std::cout << "3d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
+						std::cout << "3d: ref:" << get<0>(ref) << " opt:" << get<0>(opt) << " ref:" << std::setprecision(16) << get<1>(ref) << " opt:" << get<1>(opt) << std::endl;
 					}
 				});
 		}
@@ -258,7 +258,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f).first;
+			const auto v = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -273,7 +273,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f).first;
+			const auto v = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -288,7 +288,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality).first;
+			const auto v = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -303,7 +303,7 @@ int main()
 			const auto y = (i * golden_ratio) - std::floor(i * golden_ratio);
 			const auto z = y;
 			const auto t = x;
-			volatile auto v = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality).first;
+			const auto v = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality);
 		}
 		const auto end = std::chrono::system_clock::now();
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -327,9 +327,9 @@ int main()
 					const auto [x, y, z, t] = tuple;
 					const auto ref = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f);
 					const auto opt = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality, 0.5f);
-					if (ref.second != opt.second)
+					if (get<1>(ref) != get<1>(opt))
 					{
-						std::cout << "4d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
+						std::cout << "4d: ref:" << get<0>(ref) << " opt:" << get<0>(opt) << " ref:" << std::setprecision(16) << get<1>(ref) << " opt:" << get<1>(opt) << std::endl;
 					}
 				});
 		}
@@ -352,9 +352,9 @@ int main()
 					const auto [x, y, z, t] = tuple;
 					const auto ref = Voronoi::Evaluate4DRef(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality);
 					const auto opt = Voronoi::Evaluate4DOpt(glm::vec4(x * 2048 - 1024, y * 2048 - 1024, z * 2048 - 1024, t * 2048 - 1024), Voronoi::Hash4DLowQuality);
-					if (ref.second != opt.second)
+					if (get<1>(ref) != get<1>(opt))
 					{
-						std::cout << "4d: ref:" << ref.first << " opt:" << opt.first << " ref:" << std::setprecision(16) << ref.second << " opt:" << opt.second << std::endl;
+						std::cout << "4d: ref:" << get<0>(ref) << " opt:" << get<0>(opt) << " ref:" << std::setprecision(16) << get<1>(ref) << " opt:" << get<1>(opt) << std::endl;
 					}
 				});
 		}
