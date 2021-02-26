@@ -6,7 +6,7 @@
 
 <div align="center">
 <img src="img/stone.jpg" alt="stone" title="stone" width="480"><img src="img/flake.png" alt="flake" title="flake" width="480">
-<img src="img/tri.gif" alt="tri grid" title="tri grid" width="480"><img src="img/rect.gif" alt="rect grid" title="rect grid" width="480">
+<img src="img/fur.png" alt="fur" title="fur" width="960">
 </div>
 
 **voroce** is a fast and simple voronoi class useful to create images like the above ones. **voroce** is a coind word of **voronoi** & **veloce**.
@@ -27,6 +27,10 @@ Table 1: The number of cells to traverse
 |   2D /  triangle |   25 triangular cells |              coming soon |               coming soon |
 
 ## Features
+
+<div align="center">
+<img src="img/tri.gif" alt="tri grid" title="tri grid" width="480"><img src="img/rect.gif" alt="rect grid" title="rect grid" width="480">
+</div>
 
 * [x] sample point jittering
 * [x] optimized code path for small jitter values
