@@ -17,7 +17,6 @@ namespace voroce
 
 		static const auto LCG = 48271;
 
-		// These are not recommended because of artifacts especially for hexgrid
 		static int32_t Hash2DLowQuality(const glm::ivec2& p)
 		{
 			return ((p.x * PrimeU) ^ (p.y * PrimeV)) * LCG;
@@ -31,22 +30,6 @@ namespace voroce
 		static int32_t Hash4DLowQuality(const glm::ivec4& p)
 		{
 			return ((p.x * PrimeU) ^ (p.y * PrimeV) ^ (p.z * PrimeW) ^ (p.w * PrimeT)) * LCG;
-		}
-
-		// These are expensive but behave way better
-		static int32_t Hash2D(const glm::ivec2& p)
-		{
-			return std::hash<int32_t>()(std::hash<int32_t>()(p.x) + p.y);
-		}
-
-		static int32_t Hash3D(const glm::ivec3& p)
-		{
-			return std::hash<int32_t>()(std::hash<int32_t>()(std::hash<int32_t>()(p.x) + p.y) + p.z);
-		}
-
-		static int32_t Hash4D(const glm::ivec4& p)
-		{
-			return std::hash<int32_t>()(std::hash<int32_t>()(std::hash<int32_t>()(std::hash<int32_t>()(p.x) + p.y) + p.z) + p.w);
 		}
 
 		// minstd_rand (TODO: use better hash, do something beter here, fast but a bit ugly...)
@@ -90,6 +73,10 @@ namespace voroce
 		{
 			return ((((seed * LCG) * LCG) * LCG) / float(0xFFFFFFFF)) * jitter + 0.5f;
 		}
+
+		// constants
+		static const float sqrt3;
+		static const float one_over_sqrt3;
 
 		// traversal order
 		static const int32_t us2[4][13];

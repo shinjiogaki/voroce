@@ -7,6 +7,9 @@
 
 using namespace voroce;
 
+const float Voronoi::sqrt3          = std::sqrt(3.0f);
+const float Voronoi::one_over_sqrt3 = 1.0f / std::sqrt(3.0f);
+
 // naive implementation
 std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DRef(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2 &p), const float jitter)
 {
@@ -1024,8 +1027,7 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DTri(const glm::vec2& so
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
-	const auto one_3 = 1.0f / std::sqrt(3.0f);
-	const auto local = glm::vec2(glm::dot(glm::vec2(1.0f, -one_3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_3), source));
+	const auto local = glm::vec2(glm::dot(glm::vec2(1.0f, -one_over_sqrt3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_over_sqrt3), source));
 
 	const auto origin    = glm::vec2(std::floor(local.x), std::floor(local.y));
 	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
@@ -1121,20 +1123,18 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DHex(const glm::vec2& so
 {
 	assert(0.0f <= jitter && jitter <= 1.0f);
 
-	static const auto sqrt_3 = std::sqrt(3.0f);
-
 	static const std::array<glm::vec2, 3> basis =
 	{
-		glm::vec2(-sqrt_3 * 0.5f, -0.5f),
-		glm::vec2( sqrt_3 * 0.5f, -0.5f),
+		glm::vec2(-sqrt3 * 0.5f, -0.5f),
+		glm::vec2( sqrt3 * 0.5f, -0.5f),
 		glm::vec2(0, 1)
 	};
 
 	static const std::array<glm::vec2, 3> ortho =
 	{
-		glm::vec2(-1 / sqrt_3, -1),
-		glm::vec2( 1 / sqrt_3, -1),
-		glm::vec2( 2 / sqrt_3,  0)
+		glm::vec2(   -one_over_sqrt3, -1),
+		glm::vec2(    one_over_sqrt3, -1),
+		glm::vec2(2 * one_over_sqrt3,  0)
 	};
 
 	const std::array<float, 3> dots =
