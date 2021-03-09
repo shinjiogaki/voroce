@@ -310,103 +310,6 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DCache(const glm::vec2& 
 	return std::make_tuple(cell_id, sq_dist, point);
 }
 
-// naive triangle implementation
-std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
-{
-	assert(0.0f <= jitter && jitter <= 1.0f);
-
-	const auto one_3 = 1.0f / std::sqrt(3.0f);
-	const auto local = glm::vec2(glm::dot(glm::vec2(1.0f, -one_3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_3), source));
-
-	const auto origin    = glm::vec2(std::floor(local.x), std::floor(local.y));
-	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
-
-	auto sq_dist = std::numeric_limits<float>::max();
-	auto cell_id = 0;
-	glm::vec2 point;
-
-	// 1 (self) + 14 (neighbours)
-	const auto size = 15;
-	const std::array<int32_t, size> us[2] =
-	{
-		{ 0, 0,-1, 1, 0,-1, 1,-1, 1, -1,-2,-2, 2, 1, 0 },
-		{ 0, 0,-1, 1, 0,-1, 1,-1, 1,  0,-1,-2, 2, 2, 1 },
-	};
-	const std::array<int32_t, size> vs[2] =
-	{
-		{ 0,-1, 0, 0, 1,-1,-1, 1, 1, 2, 1, 0,-1,-2,-2 },
-		{ 0,-1, 0, 0, 1,-1,-1, 1, 1, 2, 2, 1, 0,-1,-2 },
-	};
-	const std::array<int32_t, size> flags[2] =
-	{
-		{ 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 3, 2, 1, 3, 2 },
-		{ 3, 3, 3, 3, 3, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2 },
-	};
-
-	// "A Low-Distortion Map Between Triangle and Square" by Eric Heitz
-	// maps a unit - square point (x, y) to a unit - triangle point
-	auto triangle = [&](float& x, float& y)
-	{
-		if (y > x)
-		{
-			x *= 0.5f;
-			y -= x;
-		}
-		else
-		{
-			y *= 0.5f;
-			x -= y;
-		}
-	};
-
-	const auto tmp   = local - origin;
-	const auto which = (1.0f > tmp.x + tmp.y) ? 0 : 1;
-	for (auto loop = 0; loop < size; ++loop)
-	{
-		const auto shift = glm::ivec2(us[which][loop], vs[which][loop]);
-
-		// lower triangle
-		if (1 & flags[which][loop])
-		{
-			const auto hash = my_hash(quantized + shift + 0);
-			auto randomX = OffsetX(hash);
-			auto randomY = OffsetY(hash);
-			triangle(randomX, randomY);
-			const auto offset = glm::vec2(randomX, randomY) * jitter + 1.0f / 3.0f;
-			const auto sample = origin + offset + glm::vec2(shift);
-			const auto global = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
-			const auto tmp    = glm::dot(source - global, source - global);
-			if (sq_dist > tmp)
-			{
-				sq_dist = tmp;
-				cell_id = hash;
-				point   = sample;
-			}
-		}
-
-		// upper triangle
-		if (2 & flags[which][loop])
-		{
-			const auto hash = my_hash(quantized + shift + PrimeW);
-			auto randomX = OffsetX(hash);
-			auto randomY = OffsetY(hash);
-			triangle(randomX, randomY);
-			const auto offset = (glm::vec2(0.5f, 0.5f) - glm::vec2(randomX, randomY)) * jitter + 2.0f / 3.0f;
-			const auto sample = origin + offset + glm::vec2(shift);
-			const auto global = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
-			const auto tmp    = glm::dot(source - global, source - global);
-			if (sq_dist > tmp)
-			{
-				sq_dist = tmp;
-				cell_id = hash;
-				point   = sample;
-			}
-		}
-	}
-
-	return std::make_tuple(cell_id, sq_dist, point);
-}
-
 // naive implementation
 std::tuple<int32_t, float, glm::vec3> Voronoi::Evaluate3DRef(const glm::vec3& source, int32_t (*my_hash)(const glm::ivec3& p), const float jitter)
 {
@@ -1110,6 +1013,203 @@ std::tuple<int32_t, float, glm::vec4> Voronoi::Evaluate4DCache(const glm::vec4& 
 			{
 				break;
 			}
+		}
+	}
+
+	return std::make_tuple(cell_id, sq_dist, point);
+}
+
+// naive triangle implementation
+std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
+{
+	assert(0.0f <= jitter && jitter <= 1.0f);
+
+	const auto one_3 = 1.0f / std::sqrt(3.0f);
+	const auto local = glm::vec2(glm::dot(glm::vec2(1.0f, -one_3), source), glm::dot(glm::vec2(0.0f, 2.0f * one_3), source));
+
+	const auto origin    = glm::vec2(std::floor(local.x), std::floor(local.y));
+	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
+
+	auto sq_dist = std::numeric_limits<float>::max();
+	auto cell_id = 0;
+	glm::vec2 point;
+
+	// 1 (self) + 14 (neighbours)
+	const auto size = 15;
+	const std::array<int32_t, size> us[2] =
+	{
+		{ 0, 0,-1, 1, 0,-1, 1,-1, 1, -1,-2,-2, 2, 1, 0 },
+		{ 0, 0,-1, 1, 0,-1, 1,-1, 1,  0,-1,-2, 2, 2, 1 },
+	};
+	const std::array<int32_t, size> vs[2] =
+	{
+		{ 0,-1, 0, 0, 1,-1,-1, 1, 1, 2, 1, 0,-1,-2,-2 },
+		{ 0,-1, 0, 0, 1,-1,-1, 1, 1, 2, 2, 1, 0,-1,-2 },
+	};
+	const std::array<int32_t, size> flags[2] =
+	{
+		{ 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 3, 2, 1, 3, 2 },
+		{ 3, 3, 3, 3, 3, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2 },
+	};
+
+	// "A Low-Distortion Map Between Triangle and Square" by Eric Heitz
+	// maps a unit - square point (x, y) to a unit - triangle point
+	auto triangle = [&](float& x, float& y)
+	{
+		if (y > x)
+		{
+			x *= 0.5f;
+			y -= x;
+		}
+		else
+		{
+			y *= 0.5f;
+			x -= y;
+		}
+	};
+
+	const auto tmp   = local - origin;
+	const auto which = (1.0f > tmp.x + tmp.y) ? 0 : 1;
+	for (auto loop = 0; loop < size; ++loop)
+	{
+		const auto shift = glm::ivec2(us[which][loop], vs[which][loop]);
+
+		// lower triangle
+		if (1 & flags[which][loop])
+		{
+			const auto hash = my_hash(quantized + shift + 0);
+			auto randomX = OffsetX(hash);
+			auto randomY = OffsetY(hash);
+			triangle(randomX, randomY);
+			const auto offset = glm::vec2(randomX, randomY) * jitter + 1.0f / 3.0f;
+			const auto sample = origin + offset + glm::vec2(shift);
+			const auto global = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
+			const auto tmp    = glm::dot(source - global, source - global);
+			if (sq_dist > tmp)
+			{
+				sq_dist = tmp;
+				cell_id = hash;
+				point   = sample;
+			}
+		}
+
+		// upper triangle
+		if (2 & flags[which][loop])
+		{
+			const auto hash = my_hash(quantized + shift + PrimeW);
+			auto randomX = OffsetX(hash);
+			auto randomY = OffsetY(hash);
+			triangle(randomX, randomY);
+			const auto offset = (glm::vec2(0.5f, 0.5f) - glm::vec2(randomX, randomY)) * jitter + 2.0f / 3.0f;
+			const auto sample = origin + offset + glm::vec2(shift);
+			const auto global = glm::vec2(glm::dot(glm::vec2(1.0f, 0.5f), sample), glm::dot(glm::vec2(0.0f, std::sqrt(3) * 0.5f), sample));
+			const auto tmp    = glm::dot(source - global, source - global);
+			if (sq_dist > tmp)
+			{
+				sq_dist = tmp;
+				cell_id = hash;
+				point   = sample;
+			}
+		}
+	}
+
+	return std::make_tuple(cell_id, sq_dist, point);
+}
+
+// naive honeycomb implementation
+std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DHex(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter)
+{
+	assert(0.0f <= jitter && jitter <= 1.0f);
+
+	static const auto sqrt_3 = std::sqrt(3.0f);
+
+	static const std::array<glm::vec2, 3> basis =
+	{
+		glm::vec2(-sqrt_3 * 0.5f, -0.5f),
+		glm::vec2( sqrt_3 * 0.5f, -0.5f),
+		glm::vec2(0, 1)
+	};
+
+	static const std::array<glm::vec2, 3> ortho =
+	{
+		glm::vec2(-1 / sqrt_3, -1),
+		glm::vec2( 1 / sqrt_3, -1),
+		glm::vec2( 2 / sqrt_3,  0)
+	};
+
+	const std::array<float, 3> dots =
+	{
+		glm::dot(ortho[0], source),
+		glm::dot(ortho[1], source),
+		glm::dot(ortho[2], source)
+	};
+
+	const std::array<float, 6> grids =
+	{
+		std::floor( dots[0]), std::floor( dots[1]), std::floor( dots[2]),
+		std::floor(-dots[0]), std::floor(-dots[1]), std::floor(-dots[2])
+	};
+
+	const int32_t int_grids[6] =
+	{
+		int32_t(grids[0]), int32_t(grids[1]), int32_t(grids[2]),
+		int32_t(grids[3]), int32_t(grids[4]), int32_t(grids[5])
+	};
+
+	glm::ivec2 quantized;
+	glm::vec2  origin(0, 0);
+	if ((int_grids[0] + int_grids[1]) % 3 == 0)
+	{
+		origin    = basis[0] * grids[0] + basis[1] * grids[1];
+		quantized = { int_grids[0], int_grids[1] };
+	}
+	else if ((int_grids[2] + int_grids[3]) % 3 == 0)
+	{
+		origin    = basis[1] * grids[2] + basis[2] * grids[3];
+		quantized = { -int_grids[3], int_grids[2] - int_grids[3] };
+	}
+	else if ((int_grids[4] + int_grids[5]) % 3 == 0)
+	{
+		origin    = basis[2] * grids[4] + basis[0] * grids[5];
+		quantized = { int_grids[5] - int_grids[4], -int_grids[4] };
+	}
+
+	const std::array<int32_t, 4>  slices = { 0, 7, 13, 19 };
+	const std::array<  float, 3>  ranges = { 0, 1, 3 };
+	const std::array<int32_t, 19> us     = { 0, 1, -1, -2, -1,  1, 2, 3, 0, -3, -3,  0, 3, 2, -2, -4, -2,  2, 4 };
+	const std::array<int32_t, 19> vs     = { 0, 2,  1, -1, -2, -1, 1, 3, 3,  0, -3, -3, 0, 4,  2, -2, -4, -2, 2 };
+
+	auto hexagon = [&](const int32_t hash)
+	{
+		const auto axis = hash % 3;
+		return basis[axis] * OffsetX(hash) + basis[(axis+1) % 3] * OffsetY(hash);
+	};
+
+	auto sq_dist = std::numeric_limits<float>::max();
+	auto cell_id = 0;
+	glm::vec2 point;
+
+	for (auto dist = 0; dist < 3; ++dist)
+	{
+		if (ranges[dist] < sq_dist)
+		{
+			for (auto loop = slices[dist]; loop < slices[dist + 1]; ++loop)
+			{
+				const auto hash   = my_hash(quantized + glm::ivec2(us[loop], vs[loop]));
+				const auto offset = hexagon(hash) * jitter;
+				const auto sample = origin + offset + basis[0] * float(us[loop]) + basis[1] * float(vs[loop]);
+				const auto tmp    = glm::dot(source - sample, source - sample);
+				if (sq_dist > tmp)
+				{
+					sq_dist = tmp;
+					cell_id = hash;
+					point   = sample;
+				}
+			}
+		}
+		else
+		{
+			break;
 		}
 	}
 
