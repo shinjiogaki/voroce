@@ -1,6 +1,9 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
 
+#ifndef VOROCE
+#define VOROCE
+
 #include "../glm/glm/glm.hpp"
 
 #include <array>
@@ -1453,3 +1456,5 @@ const int32_t Voronoi::ts4[16][195] =
 };
 
 }
+
+#endif
