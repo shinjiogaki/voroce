@@ -568,13 +568,12 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 		offsets[loop - 1] = sample - closest;
 	}
 
-	// b-spline
+	// compute intersections
 	std::vector<glm::vec2> intersects; intersects.reserve(32);
 	for (auto i = 0; i < N; ++i)
 	{
 		for (auto j = i + 1; j < N; ++j)
 		{
-			// compute intersection
 			auto matrix = glm::mat2x2(offsets[i].x, offsets[i].y, offsets[j].x, offsets[j].y);
 			if(0.0f == glm::determinant(matrix))
 			{
