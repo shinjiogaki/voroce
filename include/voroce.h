@@ -596,7 +596,7 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 		}
 	}
 
-	// sort offsets
+	// sort intersections
 	auto polar = [&](const glm::vec2 &p){ return (std::atan2(p.y, p.x) + pi) / (2 * pi); };
 	std::sort(begin(intersects), end(intersects), [&](const glm::vec2& a, const glm::vec2& b) { return polar(a) > polar(b); });
 
