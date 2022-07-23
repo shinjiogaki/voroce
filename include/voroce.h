@@ -32,7 +32,44 @@ struct Voronoi
 	{
 		return ((p.x * PrimeU) ^ (p.y * PrimeV) ^ (p.z * PrimeW) ^ (p.w * PrimeT)) * LCG;
 	}
-	// minstd_rand (TODO: use better hash, do something beter here, fast but a bit ugly...)
+
+	// reference implementation
+	static std::tuple<int32_t, float, glm::vec2> Evaluate2DRef(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+	static std::tuple<int32_t, float, glm::vec3> Evaluate3DRef(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
+	static std::tuple<int32_t, float, glm::vec4> Evaluate4DRef(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
+
+	// optimized (for bounced rays)
+	static std::tuple<int32_t, float, glm::vec2> Evaluate2DOpt(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+	static std::tuple<int32_t, float, glm::vec3> Evaluate3DOpt(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
+	static std::tuple<int32_t, float, glm::vec4> Evaluate4DOpt(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
+
+	// additional optimization with cach (dedicated for primary rays)
+	std::tuple<int32_t, float, glm::vec2> Evaluate2DCache(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+	std::tuple<int32_t, float, glm::vec3> Evaluate3DCache(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
+	std::tuple<int32_t, float, glm::vec4> Evaluate4DCache(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
+
+	// non rectangular grids
+	static std::tuple<int32_t, float, glm::vec2> Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+	static std::tuple<int32_t, float, glm::vec2> Evaluate2DHex(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+
+	// voronoi edge with normal vector
+	// voronoi edge was originaly developed by Inigo Quilez https://iquilezles.org/articles/voronoilines/
+	// voroce will use optimized neighbourhood query (TODO)
+	// voroce provides normal vectors
+	static std::tuple<int32_t, float, glm::vec2> Edge2DSharp(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter = 1.0f, const float width = 0.0f);
+	static std::tuple<int32_t, float, glm::vec2> Edge2DRound(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter = 1.0f, const float width = 0.0f);
+
+	// wrapper functions not to include glm from your host app
+	static auto Edge2DSharp(const float x, const float y, const float jitter = 1.0f, const float width = 0.0f) { return Voronoi::Edge2DSharp(glm::vec2(x, y), Voronoi::Hash2DLowQuality, jitter, width); }
+	static auto Edge2DRound(const float x, const float y, const float jitter = 1.0f, const float width = 0.0f) { return Voronoi::Edge2DRound(glm::vec2(x, y), Voronoi::Hash2DLowQuality, jitter, width); }
+
+private:
+	// constants
+	static const float pi;
+	static const float sqrt3;
+	static const float one_over_sqrt3;
+
+	// minstd_rand (TODO: do something better, these are fast but a bit ugly...)
 	static auto OffsetX(const int32_t seed)
 	{
 		return ((seed) / float(0xFFFFFFFF)) + 0.5f;
@@ -65,9 +102,7 @@ struct Voronoi
 	{
 		return ((((seed * LCG) * LCG) * LCG) / float(0xFFFFFFFF)) * jitter + 0.5f;
 	}
-	// constants
-	static const float sqrt3;
-	static const float one_over_sqrt3;
+
 	// traversal order
 	static const int32_t us2[4][13];
 	static const int32_t vs2[4][13];
@@ -78,41 +113,85 @@ struct Voronoi
 	static const int32_t vs4[16][195];
 	static const int32_t ws4[16][195];
 	static const int32_t ts4[16][195];
+
 	// cache for 2d
 	int32_t   cache2d_cell_id  = 0xFFFFFFFF;
 	int32_t   cache2d_quadrant = 0;
 	int32_t   cache2d_counter  = 0;
 	int32_t   cache2d_cell_ids[13];
 	glm::vec2 cache2d_samples [13];
+
 	// cache for 3d
 	int32_t   cache3d_cell_id = 0xFFFFFFFF;
 	int32_t   cache3d_octant  = 0;
 	int32_t   cache3d_counter = 0;
 	int32_t   cache3d_cell_ids[39];
 	glm::vec3 cache3d_samples [39];
+
 	// cache for 4d
 	int32_t   cache4d_cell_id = 0xFFFFFFFF;
 	int32_t   cache4d_hextant = 0;
 	int32_t   cache4d_counter = 0;
 	int32_t   cache4d_cell_ids[195];
 	glm::vec4 cache4d_samples [195];
-	// reference implementation
-	static std::tuple<int32_t, float, glm::vec2> Evaluate2DRef(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-	static std::tuple<int32_t, float, glm::vec3> Evaluate3DRef(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
-	static std::tuple<int32_t, float, glm::vec4> Evaluate4DRef(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
-	// optimized (for bounced rays)
-	static std::tuple<int32_t, float, glm::vec2> Evaluate2DOpt(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-	static std::tuple<int32_t, float, glm::vec3> Evaluate3DOpt(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
-	static std::tuple<int32_t, float, glm::vec4> Evaluate4DOpt(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
-	// cached (for primary rays)
-	std::tuple<int32_t, float, glm::vec2> Evaluate2DCache(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-	std::tuple<int32_t, float, glm::vec3> Evaluate3DCache(const glm::vec3& source, int32_t(*my_hash)(const glm::ivec3& p), const float jitter = 1.0f);
-	std::tuple<int32_t, float, glm::vec4> Evaluate4DCache(const glm::vec4& source, int32_t(*my_hash)(const glm::ivec4& p), const float jitter = 1.0f);
-	// non rectangular grids
-	static std::tuple<int32_t, float, glm::vec2> Evaluate2DTri(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
-	static std::tuple<int32_t, float, glm::vec2> Evaluate2DHex(const glm::vec2& source, int32_t(*my_hash)(const glm::ivec2& p), const float jitter = 1.0f);
+
+	// SDF (line segment) by Inigo Quilez https://iquilezles.org/articles/distfunctions2d/
+	static auto sd_segment(const glm::vec2 &p, const glm::vec2 &a, const glm::vec2 &b)
+	{
+		auto pa = p - a, ba = b - a;
+		auto h = std::clamp(glm::dot(pa, ba) / glm::dot(ba, ba), 0.0f, 1.0f);
+		return glm::length(pa - ba * h);
+	}
+
+	// SDF (Bezier curve) by Inigo Quilez https://iquilezles.org/articles/distfunctions2d/
+	static auto sd_bezier(const glm::vec2 &pos, const glm::vec2 &A, const glm::vec2 &B, const glm::vec2 &C)
+	{
+		auto dot2  = [](const glm::vec2 &a) { return glm::dot(a, a); };
+		auto cross = [](const glm::vec2 &a, const glm::vec2 &b) { return a.x * b.y - a.y * b.x; };
+
+		auto a = B - A;
+		auto b = A - 2.0f * B + C;
+		auto c = a * 2.0f;
+		auto d = A - pos;
+		auto kk = 1.0f  / glm::dot(b, b);
+		auto kx = kk * glm::dot(a, b);
+		auto ky = kk * (2.0f * glm::dot(a, a) + glm::dot(d, b)) / 3.0f;
+		auto kz = kk * glm::dot(d, a);
+		auto p = ky - kx * kx;
+		auto p3 = p * p * p;
+		auto q = kx * (2.0f * kx * kx - 3.0f * ky) + kz;
+		auto h = q * q + 4.0f * p3;
+		if(0.0f <= h)
+		{
+			h = std::sqrt(h);
+			auto x = (glm::vec2(h, -h) - q) / 2.0f;
+			auto uv = glm::sign(x) * glm::pow(glm::abs(x), glm::vec2(1.0f / 3.0f));
+			auto t  = glm::clamp(uv.x + uv.y - kx, 0.0f, 1.0f);
+			auto q  = d + (c + b * t) * t;
+			auto res = dot2(q);
+			auto sgn = cross(c + 2.0f * b * t, q);
+			return std::make_tuple(std::sqrt(res) * glm::sign(sgn), q);
+		}
+		auto z = std::sqrt(-p);
+		auto v = std::acos(q / (p * z * 2.0f)) / 3.0f;
+		auto m = std::cos(v);
+		auto n = std::sin(v) * sqrt3;
+		auto t = glm::clamp(glm::vec3(m + m, -n - m, n - m) * z - kx, 0.0f, 1.0f);
+		auto qx = d + (c + b * t.x) * t.x;
+		auto qy = d + (c + b * t.y) * t.y;
+		auto dx = dot2(qx), sx = cross(c + 2.0f * b * t.x, qx);
+		auto dy = dot2(qy), sy = cross(c + 2.0f * b * t.y, qy);
+		if(dx < dy)
+		{
+			return std::make_tuple(std::sqrt(dx) * glm::sign(sx), qx);
+		}
+		return std::make_tuple(std::sqrt(dy) * glm::sign(sy), qy);
+	}
 };
 
+#ifdef VOROCE_IMPLEMENTATION
+
+const float Voronoi::pi             = 3.1415926535f;
 const float Voronoi::sqrt3          = std::sqrt(3.0f);
 const float Voronoi::one_over_sqrt3 = 1.0f / std::sqrt(3.0f);
 
@@ -417,6 +496,137 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DCache(const glm::vec2& 
 	}
 
 	return std::make_tuple(cell_id, sq_dist, point);
+}
+
+// sharp Voronoi edges
+std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DSharp(const glm::vec2& shading, int32_t (*my_hash)(const glm::ivec2& p), const float jitter, const float width)
+{
+	assert(0.0f <= jitter && jitter <= 1.0f);
+
+	const auto [old_cell_id, sq_dis, closest] = Voronoi::Evaluate2DOpt(shading, my_hash, jitter);
+
+	const auto origin    = glm::vec2(std::floor(closest.x), std::floor(closest.y));
+	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
+
+	auto dis = std::numeric_limits<float>::max();
+	glm::vec2 point;
+
+	// 20 (neighbours)
+	const auto size = 20;
+	const std::array<int32_t, size> us = {  0,-1, 1, 0,-1, 1,-1, 1, 0,-2, 2, 0,-1, 1,-2, 2,-2, 2,-1, 1 };
+	const std::array<int32_t, size> vs = { -1, 0, 0, 1,-1,-1, 1, 1,-2, 0, 0, 2,-2,-2,-1,-1, 1, 1, 2, 2 };
+	for (auto loop = 0; loop < size; ++loop)
+	{
+		const auto shift  = glm::ivec2(us[loop], vs[loop]);
+		const auto hash   = my_hash(quantized + shift);
+		const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
+		const auto sample = origin + offset + glm::vec2(shift);
+		const auto tmp    = glm::dot(shading - (sample + closest) * 0.5f, glm::normalize(closest - sample));
+		if (dis > tmp)
+		{
+			dis   = tmp;
+			point = sample;
+		}
+	}
+	if(width > dis)
+	{
+		const auto normal = glm::normalize(point - closest);
+		return std::make_tuple(old_cell_id, dis, normal);
+	}
+	return std::make_tuple(old_cell_id, dis, glm::vec2(0));
+}
+
+// round Voronoi edges
+std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shading, int32_t (*my_hash)(const glm::ivec2& p), const float jitter, const float width)
+{
+	assert(0.0f <= jitter && jitter <= 1.0f);
+
+	const auto [old_cell_id, sq_dis, closest] = Voronoi::Evaluate2DOpt(shading, my_hash, jitter);
+
+	const auto size = 20;
+	const std::array<int32_t, size> us = {  0,-1, 1, 0,-1, 1,-1, 1, 0,-2, 2, 0,-1, 1,-2, 2,-2, 2,-1, 1 };
+	const std::array<int32_t, size> vs = { -1, 0, 0, 1,-1,-1, 1, 1,-2, 0, 0, 2,-2,-2,-1,-1, 1, 1, 2, 2 };
+
+	const auto origin    = glm::vec2(std::floor(closest.x), std::floor(closest.y));
+	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
+
+	// list up all offsets
+	std::array<glm::vec2, size> offsets;
+	for (auto loop = 0; loop < size; ++loop)
+	{
+		const auto shift  = glm::ivec2(us[loop], vs[loop]);
+		const auto hash   = my_hash(quantized + shift);
+		const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
+		const auto sample = origin + offset + glm::vec2(shift);
+		offsets[loop] = sample - closest;
+	}
+
+	// b-spline
+	const auto N = int32_t(std::size(offsets));
+	std::vector<glm::vec2> intersects; intersects.reserve(32);
+	for (auto i = 0; i < N; ++i)
+	{
+		for (auto j = i + 1; j < N; ++j)
+		{
+			// compute intersection
+			auto matrix = glm::mat2x2(offsets[i].x, offsets[i].y, offsets[j].x, offsets[j].y);
+			if(0.0f == glm::determinant(matrix))
+			{
+				continue;
+			}
+			auto intersect = glm::vec2(glm::dot(offsets[i],offsets[i]), glm::dot(offsets[j], offsets[j])) * glm::inverse(matrix);
+
+			auto flag = true;
+			for (auto k = 0; k < N; ++k)
+			{
+				// Check this intersection is valid
+				if (i == k || j == k)
+				{
+					continue;
+				}
+
+				if (0.0f < glm::dot(offsets[k], intersect - offsets[k]))
+				{
+					flag = false;
+					break;
+				}
+			}
+
+			if (flag)
+			{
+				intersects.push_back(intersect);
+			}
+		}
+	}
+
+	// sort offsets
+	auto polar = [&](const glm::vec2 &p){ return (std::atan2(p.y, p.x) + pi) / (2 * pi); };
+	std::sort(begin(intersects), end(intersects), [&](const glm::vec2& a, const glm::vec2& b) { return polar(a) > polar(b); });
+
+	// bezier
+	auto sgn = std::numeric_limits<float>::max();
+	auto dis = std::numeric_limits<float>::max();
+	auto nrm = glm::vec2(0);
+	auto I = int32_t(std::size(intersects));
+	for (auto i = 0; i < I; ++i)
+	{
+		const auto p = (i - 1 + I) % I;
+		const auto n = (i + 1    ) % I;
+		const auto mid_p = (intersects[i] + intersects[p]) * 0.5f;
+		const auto mid_n = (intersects[i] + intersects[n]) * 0.5f;
+		const auto [d, normal] = sd_bezier(shading - closest, mid_p * 0.5f, intersects[i] * 0.5f, mid_n * 0.5f);
+		if (sgn > std::abs(d))
+		{
+			dis = d;
+			sgn = std::abs(d);
+			nrm = normal;
+		}
+	}
+	if(width > dis)
+	{
+		return std::make_tuple(old_cell_id, dis, glm::normalize(nrm));
+	}
+	return std::make_tuple(old_cell_id, dis, glm::vec2(0));
 }
 
 // naive implementation
@@ -1322,7 +1532,6 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Evaluate2DHex(const glm::vec2& so
 	return std::make_tuple(cell_id, sq_dist, point);
 }
 
-
 const int32_t Voronoi::us2[4][13] =
 {
 	{ 0, 1, 0, 1, 0,-1, 1,-1,-1, 2, 0, 2, 1},
@@ -1454,7 +1663,7 @@ const int32_t Voronoi::ts4[16][195] =
 	{ 0,-1, 0, 0, 0, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 1, 1, 1,-2,-1, 1, 2,-2,-2,-2, 2, 2, 2,-2,-2,-2, 2, 2, 2,-2, 2, 0, 0, 0,-1,-1,-1, 0, 0, 0, 0, 0, 0, 1, 1, 1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 1, 1, 1, 1, 1, 1,-1,-1,-1, 1, 1, 1,-2,-2,-2, 2, 2, 2,-2,-2,-2,-2,-2,-2, 2, 2, 2, 2, 2, 2,-2,-2,-2, 2, 2, 2, 0, 0, 0,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 1, 1, 1,-2,-2,-2, 2, 2, 2,-2,-2,-2, 2, 2, 2, 0,-1, 1,-2, 2, 0, 0, 0,-1,-1,-1, 0, 0, 0, 0, 0, 0, 1, 1, 1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 1, 1, 1, 1, 1, 1,-1,-1,-1, 1, 1, 1,-2,-2,-2, 2, 2, 2,-2,-2,-2,-2,-2,-2, 2, 2, 2, 2, 2, 2,-2,-2,-2, 2, 2, 2},
 	{ 0,-1, 0, 0, 0, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 1, 1, 1,-2,-1, 1, 2,-2,-2,-2, 2, 2, 2,-2,-2,-2, 2, 2, 2,-2, 2, 0, 0, 0,-1,-1,-1, 0, 0, 0, 0, 0, 0, 1, 1, 1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 1, 1, 1, 1, 1, 1,-1,-1,-1, 1, 1, 1,-2,-2,-2, 2, 2, 2,-2,-2,-2,-2,-2,-2, 2, 2, 2, 2, 2, 2,-2,-2,-2, 2, 2, 2, 0, 0, 0,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 1, 1, 1,-2,-2,-2, 2, 2, 2,-2,-2,-2, 2, 2, 2, 0,-1, 1,-2, 2, 0, 0, 0,-1,-1,-1, 0, 0, 0, 0, 0, 0, 1, 1, 1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 1, 1, 1, 1, 1, 1,-1,-1,-1, 1, 1, 1,-2,-2,-2, 2, 2, 2,-2,-2,-2,-2,-2,-2, 2, 2, 2, 2, 2, 2,-2,-2,-2, 2, 2, 2},
 };
-
+#endif
 }
 
 #endif

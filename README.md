@@ -11,13 +11,20 @@
 <img src="img/hex.gif" alt="hex" title="hex" width="480">
 </div>
 
-**voroce** is a fast and simple voronoi class useful to create images like the above ones. **voroce** is a coind word of **voronoi** & **veloce**.
+**voroce** is a simple voronoi library useful to create images like the above ones. **voroce** is a coind word of **voronoi** & **veloce**.
+
+Please feel free to use in your product. I'd be happy if you credit my name.
+Mind that the copyrightholder of the SDF functions used in **veloce** is Inigo Quilez.
 
 <div align="center">
 <img src="img/figure3.png" alt="order" title="order" width="320">
 </div>
 
-[Voronoi](http://www.rhythmiccanvas.com/research/papers/worley.pdf) is very useful for generating interesting patterns. Surprisingly, however, I have not found much literature on how to compute them efficiently. The most relevant work to this project was done by [Jontier et al.](http://jcgt.org/published/0008/01/02/paper.pdf) who proposed an optimal visiting order for efficient cellular noise generation. In the 2D rectangular grid case, they gave the order of 20 neighboring cells, which I think is not optimal because some cells do not need to be visited (let me know if I'm wrong :-)). If the shading point is in the green region and each cell has at least one sample point, it is unnecessary to visit the cells labeled 10, 13, 14, 15, 16, 17, 18, and 19. For example, the cell labeled 10 cannot have a sample point closer than the one in the cell labeled 0. Also, note that the underlying grid does not have to be rectangular. We can use triangular and hexagonal grids as well. In [voronoise](https://iquilezles.org/www/articles/voronoise/voronoise.htm) by Inigo Quilez, sample points are jittered so that cell noise and voronoi can be generated in a single framework. The number of neighboring cells to be visited depends on the amount of jitter.
+[Voronoi](http://www.rhythmiccanvas.com/research/papers/worley.pdf) is very useful for generating interesting patterns. Surprisingly, however, I have not found much literature on how to compute them efficiently. The most relevant work to this project was done by [Jontier et al.](http://jcgt.org/published/0008/01/02/paper.pdf) who proposed an optimal visiting order for efficient cellular noise generation. In the 2D rectangular grid case, they gave the order of 20 neighboring cells, which I think is not optimal because some cells do not need to be visited (let me know if I'm wrong :-)). If the shading point is in the green region and each cell has at least one sample point, it is unnecessary to visit the cells labeled 10, 13, 14, 15, 16, 17, 18, and 19. For example, the cell labeled 10 cannot have a sample point closer than the one in the cell labeled 0.
+
+Note that the underlying grid does not have to be rectangular. We can use triangular and hexagonal grids as well.
+
+In [voronoise](https://iquilezles.org/www/articles/voronoise/voronoise.htm) by Inigo Quilez, sample points are jittered so that cell noise and voronoi can be generated in a single framework. The number of neighboring cells to be visited depends on the amount of jitter.
 
 Table 1: The number of cells to traverse
 
@@ -44,6 +51,9 @@ Table 1: The number of cells to traverse
 * [x] cache (2D) (brings nearly 2x speedup for primary rays)
 * [x] cache (3D) (brings nearly 2x speedup for primary rays)
 * [x] cache (4D) (brings **over** 3x speedup for primary rays)
+* [x] sharp & round voronoi edges (2D rectangular grid)
+* [ ] sharp & round voronoi edges (2D triangular grid)
+* [ ] sharp & round voronoi edges (2D hexagonal grid)
 
 I have many ideas. Stay tuned!
 
@@ -56,5 +66,5 @@ Table 2: Time (relative to naive 2d implementation)
 |  3d  |                  6.37 |                     1.23 |                      0.83 |
 |  4d  |                 44.76 |                     8.79 |                      4.08 |
 
-## Dependencies
+## Dependency
 * [glm](https://github.com/g-truc/glm)

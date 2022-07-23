@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <random>
 
+#define VOROCE_IMPLEMENTATION
 #include "../include/voroce.h"
 
 int main()
