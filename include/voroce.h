@@ -60,6 +60,7 @@ struct Voronoi
 	static std::tuple<int32_t, float, glm::vec2> Edge2DRound(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter = 1.0f, const float width = 0.0f);
 
 	// wrapper functions not to include glm from your host app
+	// returns (cell_id, distance to the boundary, direction to the closest boundary)
 	static auto Edge2DSharp(const float x, const float y, const float jitter = 1.0f, const float width = 0.0f) { return Voronoi::Edge2DSharp(glm::vec2(x, y), Voronoi::Hash2DLowQuality, jitter, width); }
 	static auto Edge2DRound(const float x, const float y, const float jitter = 1.0f, const float width = 0.0f) { return Voronoi::Edge2DRound(glm::vec2(x, y), Voronoi::Hash2DLowQuality, jitter, width); }
 
@@ -508,16 +509,18 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DSharp(const glm::vec2& shad
 	const auto origin    = glm::vec2(std::floor(closest.x), std::floor(closest.y));
 	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
 
+	// quadrant selection
+	auto quadrant = 0;
+	if (0.5f > closest.x - origin.x) { quadrant += 1; }
+	if (0.5f > closest.y - origin.y) { quadrant += 2; }
+
+	// list up all offsets
 	auto dis = std::numeric_limits<float>::max();
 	glm::vec2 point;
-
-	// 20 (neighbours)
-	const auto size = 20;
-	const std::array<int32_t, size> us = {  0,-1, 1, 0,-1, 1,-1, 1, 0,-2, 2, 0,-1, 1,-2, 2,-2, 2,-1, 1 };
-	const std::array<int32_t, size> vs = { -1, 0, 0, 1,-1,-1, 1, 1,-2, 0, 0, 2,-2,-2,-1,-1, 1, 1, 2, 2 };
-	for (auto loop = 0; loop < size; ++loop)
+	const auto N = 13;
+	for (auto loop = 1; loop < N; ++loop)
 	{
-		const auto shift  = glm::ivec2(us[loop], vs[loop]);
+		const auto shift  = glm::ivec2(us2[quadrant][loop], vs2[quadrant][loop]);
 		const auto hash   = my_hash(quantized + shift);
 		const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
 		const auto sample = origin + offset + glm::vec2(shift);
@@ -530,8 +533,8 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DSharp(const glm::vec2& shad
 	}
 	if(width > dis)
 	{
-		const auto normal = glm::normalize(point - closest);
-		return std::make_tuple(old_cell_id, dis, normal);
+		const auto dir = (point - closest) * 0.5f;
+		return std::make_tuple(old_cell_id, dis, dir);
 	}
 	return std::make_tuple(old_cell_id, dis, glm::vec2(0));
 }
@@ -543,26 +546,29 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 
 	const auto [old_cell_id, sq_dis, closest] = Voronoi::Evaluate2DOpt(shading, my_hash, jitter);
 
-	const auto size = 20;
-	const std::array<int32_t, size> us = {  0,-1, 1, 0,-1, 1,-1, 1, 0,-2, 2, 0,-1, 1,-2, 2,-2, 2,-1, 1 };
-	const std::array<int32_t, size> vs = { -1, 0, 0, 1,-1,-1, 1, 1,-2, 0, 0, 2,-2,-2,-1,-1, 1, 1, 2, 2 };
-
 	const auto origin    = glm::vec2(std::floor(closest.x), std::floor(closest.y));
 	const auto quantized = glm::ivec2(int32_t(origin.x), int32_t(origin.y));
 
+	// quadrant selection
+	auto quadrant = 0;
+	if (0.5f > closest.x - origin.x) { quadrant += 1; }
+	if (0.5f > closest.y - origin.y) { quadrant += 2; }
+
 	// list up all offsets
+	glm::vec2 point;
+	const auto size = 13;
+	const auto N = size - 1;
 	std::array<glm::vec2, size> offsets;
-	for (auto loop = 0; loop < size; ++loop)
+	for (auto loop = 1; loop < size; ++loop)
 	{
-		const auto shift  = glm::ivec2(us[loop], vs[loop]);
+		const auto shift  = glm::ivec2(us2[quadrant][loop], vs2[quadrant][loop]);
 		const auto hash   = my_hash(quantized + shift);
 		const auto offset = glm::vec2(OffsetX(hash, jitter), OffsetY(hash, jitter));
 		const auto sample = origin + offset + glm::vec2(shift);
-		offsets[loop] = sample - closest;
+		offsets[loop - 1] = sample - closest;
 	}
 
 	// b-spline
-	const auto N = int32_t(std::size(offsets));
 	std::vector<glm::vec2> intersects; intersects.reserve(32);
 	for (auto i = 0; i < N; ++i)
 	{
@@ -575,23 +581,15 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 				continue;
 			}
 			auto intersect = glm::vec2(glm::dot(offsets[i],offsets[i]), glm::dot(offsets[j], offsets[j])) * glm::inverse(matrix);
-
-			auto flag = true;
-			for (auto k = 0; k < N; ++k)
+			auto flag      = true;
+			for (auto k = 0; k < N; ++k) if (i != k && j != k)
 			{
-				// Check this intersection is valid
-				if (i == k || j == k)
-				{
-					continue;
-				}
-
 				if (0.0f < glm::dot(offsets[k], intersect - offsets[k]))
 				{
 					flag = false;
 					break;
 				}
 			}
-
 			if (flag)
 			{
 				intersects.push_back(intersect);
@@ -606,7 +604,7 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 	// bezier
 	auto sgn = std::numeric_limits<float>::max();
 	auto dis = std::numeric_limits<float>::max();
-	auto nrm = glm::vec2(0);
+	auto dir = glm::vec2(0);
 	auto I = int32_t(std::size(intersects));
 	for (auto i = 0; i < I; ++i)
 	{
@@ -614,17 +612,17 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 		const auto n = (i + 1    ) % I;
 		const auto mid_p = (intersects[i] + intersects[p]) * 0.5f;
 		const auto mid_n = (intersects[i] + intersects[n]) * 0.5f;
-		const auto [d, normal] = sd_bezier(shading - closest, mid_p * 0.5f, intersects[i] * 0.5f, mid_n * 0.5f);
+		const auto [d, direction] = sd_bezier(shading - closest, mid_p * 0.5f, intersects[i] * 0.5f, mid_n * 0.5f);
 		if (sgn > std::abs(d))
 		{
 			dis = d;
 			sgn = std::abs(d);
-			nrm = normal;
+			dir = direction;
 		}
 	}
 	if(width > dis)
 	{
-		return std::make_tuple(old_cell_id, dis, glm::normalize(nrm));
+		return std::make_tuple(old_cell_id, dis, dir);
 	}
 	return std::make_tuple(old_cell_id, dis, glm::vec2(0));
 }

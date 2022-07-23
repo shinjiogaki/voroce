@@ -12,9 +12,8 @@
 </div>
 
 **voroce** is a simple voronoi library useful to create images like the above ones. **voroce** is a coind word of **voronoi** & **veloce**.
-
-Please feel free to use in your product. I'd be happy if you credit my name.
-Mind that the copyrightholder of the SDF functions used in **veloce** is Inigo Quilez.
+Please feel free to use in your software. I would be happy if you credit my name.
+However, mind that the copyrightholder of the SDF functions used in **veloce** is Inigo Quilez.
 
 <div align="center">
 <img src="img/figure3.png" alt="order" title="order" width="320">
