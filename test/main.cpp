@@ -1,7 +1,6 @@
 // APACHE LICENSE, VERSION 2.0
 // copyright (c) shinji ogaki
 
-#include <algorithm>
 #include <chrono>
 #include <execution>
 #include <iostream>

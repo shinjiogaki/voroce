@@ -6,6 +6,7 @@
 
 #include "../glm/glm/glm.hpp"
 
+#include <algorithm>
 #include <array>
 #include <tuple>
 
@@ -59,7 +60,6 @@ struct Voronoi
 	static std::tuple<int32_t, float, glm::vec2> Edge2DSharp(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter = 1.0f, const float width = 0.0f);
 	static std::tuple<int32_t, float, glm::vec2> Edge2DRound(const glm::vec2& source, int32_t (*my_hash)(const glm::ivec2& p), const float jitter = 1.0f, const float width = 0.0f);
 
-	// wrapper functions not to include glm from your host app
 	// returns (cell_id, distance to the boundary, direction to the closest boundary)
 	static auto Edge2DSharp(const float x, const float y, const float jitter = 1.0f, const float width = 0.0f) { return Voronoi::Edge2DSharp(glm::vec2(x, y), Voronoi::Hash2DLowQuality, jitter, width); }
 	static auto Edge2DRound(const float x, const float y, const float jitter = 1.0f, const float width = 0.0f) { return Voronoi::Edge2DRound(glm::vec2(x, y), Voronoi::Hash2DLowQuality, jitter, width); }
