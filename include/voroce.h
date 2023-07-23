@@ -555,7 +555,6 @@ std::tuple<int32_t, float, glm::vec2> Voronoi::Edge2DRound(const glm::vec2& shad
 	if (0.5f > closest.y - origin.y) { quadrant += 2; }
 
 	// list up all offsets
-	glm::vec2 point;
 	const auto size = 13;
 	const auto N = size - 1;
 	std::array<glm::vec2, size> offsets;
